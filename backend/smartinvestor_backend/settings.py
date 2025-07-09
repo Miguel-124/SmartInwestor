@@ -46,6 +46,12 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+# TODO: Replace with your frontend URL
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]
 ROOT_URLCONF = "smartinvestor_backend.urls"
 
 TEMPLATES = [
