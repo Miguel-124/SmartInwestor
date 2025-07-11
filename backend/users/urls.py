@@ -7,4 +7,5 @@ urlpatterns = [
     path('auth/login/', LoginView.as_view(), name='login'),
     path('auth/google/', GoogleLoginView.as_view(), name='google-login'),
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
+    
 ]
