@@ -16,10 +16,19 @@ import {
   logoutUser,
   getCurrentSession,
 } from "../api/auth";
+import {
+  validateRegistration,
+  RegistrationData,
+} from "../utils/checkValidation";
 import { Header } from "../components/Header";
 import { Card } from "../components/Card";
 import { Footer } from "../components/Footer";
 import { globalStyles, colors, sizes } from "../styles/global";
+
+const DateTimePicker =
+  Platform.OS !== "web"
+    ? require("@react-native-community/datetimepicker").default
+    : null;
 
 const bgImage = require("../../assets/bg.jpg");
 const TTL = 30 * 60 * 1000;
@@ -28,7 +37,9 @@ export default function AuthScreen() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [dob, setDob] = useState("");
+  const [dobDate, setDobDate] = useState<Date | null>(null);
+  const [showDobPicker, setShowDobPicker] = useState(false);
+  const [dobString, setDobString] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -54,14 +65,11 @@ export default function AuthScreen() {
     })();
   }, []);
 
-  const scheduleLogout = (loginTimestamp: number) => {
-    const elapsed = Date.now() - loginTimestamp;
+  const scheduleLogout = (loginTs: number) => {
+    const elapsed = Date.now() - loginTs;
     const remaining = TTL - elapsed;
-    if (remaining <= 0) {
-      handleLogout();
-    } else {
-      logoutTimer.current = setTimeout(handleLogout, remaining);
-    }
+    if (remaining <= 0) return handleLogout();
+    logoutTimer.current = setTimeout(handleLogout, remaining);
   };
 
   const handleLogout = async () => {
@@ -78,37 +86,44 @@ export default function AuthScreen() {
     setError(null);
     setLoading(true);
     try {
-      let loggedInUser;
+      let birthDate: Date | null;
+      if (Platform.OS === "web") {
+        birthDate = dobString ? new Date(dobString) : null;
+      } else {
+        birthDate = dobDate;
+      }
+
       if (mode === "register") {
-        if (!firstName || !lastName || !dob) {
-          throw new Error("Wypełnij wszystkie pola rejestracji.");
-        }
-        if (password !== confirm) {
-          throw new Error("Hasła muszą być takie same.");
-        }
-        loggedInUser = await registerUser({
+        const msg = validateRegistration({
           firstName,
           lastName,
-          dateOfBirth: dob,
+          email,
+          password,
+          confirm,
+          dobDate: birthDate,
+        } as RegistrationData);
+        if (msg) throw new Error(msg);
+
+        const newUser = await registerUser({
+          firstName,
+          lastName,
+          dateOfBirth: birthDate!.toISOString().slice(0, 10),
           email,
           password,
         });
-        Alert.alert(
-          "Rejestracja zakończona",
-          `Witaj, ${loggedInUser.firstName}!`
-        );
+        setUser(newUser);
+        Alert.alert("Rejestracja zakończona", `Witaj, ${newUser.firstName}!`);
       } else {
-        loggedInUser = await loginUser(email, password);
-        Alert.alert(
-          "Zalogowano",
-          `Witaj z powrotem, ${loggedInUser.firstName}!`
-        );
+        const logged = await loginUser(email, password);
+        setUser(logged);
+        Alert.alert("Zalogowano", `Witaj z powrotem, ${logged.firstName}!`);
       }
-      setUser(loggedInUser);
+
       scheduleLogout(Date.now());
       setFirstName("");
       setLastName("");
-      setDob("");
+      setDobDate(null);
+      setDobString("");
       setEmail("");
       setPassword("");
       setConfirm("");
@@ -135,9 +150,7 @@ export default function AuthScreen() {
   return (
     <ImageBackground source={bgImage} style={globalStyles.background}>
       <View style={globalStyles.overlay} />
-
       <Header title="SmartInwestor" />
-
       <KeyboardAvoidingView
         style={globalStyles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -163,13 +176,65 @@ export default function AuthScreen() {
                 value={lastName}
                 onChangeText={setLastName}
               />
-              <TextInput
-                style={globalStyles.input}
-                placeholder="Data urodzenia (YYYY-MM-DD)"
-                placeholderTextColor={colors.placeholder}
-                value={dob}
-                onChangeText={setDob}
-              />
+
+              {Platform.OS === "web" ? (
+                <View style={{ width: "100%", marginBottom: 16 }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      marginBottom: 4,
+                      color: colors.text,
+                    }}
+                  >
+                    Data urodzenia
+                  </Text>
+                  <View style={[globalStyles.input, { padding: 0 }]}>
+                    <input
+                      className="dobInput"
+                      type="date"
+                      value={dobString}
+                      onChange={(e) => setDobString(e.target.value)}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        padding: 12,
+                        fontSize: 16,
+                        border: "none",
+                        background: "transparent",
+                        outline: "none",
+                      }}
+                    />
+                  </View>
+                </View>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={[globalStyles.input, { justifyContent: "center" }]}
+                    onPress={() => setShowDobPicker(true)}
+                  >
+                    <Text
+                      style={{
+                        color: dobDate ? colors.text : colors.placeholder,
+                      }}
+                    >
+                      {dobDate
+                        ? dobDate.toISOString().slice(0, 10)
+                        : "Data urodzenia"}
+                    </Text>
+                  </TouchableOpacity>
+                  {showDobPicker && DateTimePicker && (
+                    <DateTimePicker
+                      value={dobDate || new Date(2000, 0, 1)}
+                      mode="date"
+                      display="default"
+                      onChange={(_e: any, d?: Date) => {
+                        setShowDobPicker(false);
+                        if (d) setDobDate(d);
+                      }}
+                    />
+                  )}
+                </>
+              )}
             </>
           )}
 
@@ -182,7 +247,6 @@ export default function AuthScreen() {
             value={email}
             onChangeText={setEmail}
           />
-
           <TextInput
             style={globalStyles.input}
             placeholder="Hasło"
@@ -191,7 +255,6 @@ export default function AuthScreen() {
             value={password}
             onChangeText={setPassword}
           />
-
           {mode === "register" && (
             <TextInput
               style={globalStyles.input}
@@ -232,7 +295,6 @@ export default function AuthScreen() {
           </Text>
         </Card>
       </KeyboardAvoidingView>
-
       <Footer />
     </ImageBackground>
   );
