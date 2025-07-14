@@ -2,6 +2,7 @@ import { StyleSheet, Dimensions } from "react-native";
 
 const { width, height } = Dimensions.get("window");
 
+// Define global colors, spacing, and sizes
 export const colors = {
   background: "#F0F2F5",
   cardBackground: "#FFFFFF",
@@ -26,7 +27,7 @@ export const spacing = {
 export const sizes = {
   screenWidth: width,
   screenHeight: height,
-  cardMaxWidth: 1000,
+  cardMaxWidth: 1440,
   cardMinWidth: 500,
 };
 
@@ -44,6 +45,8 @@ export const globalStyles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.overlay,
   },
+
+  // Styles for header
   header: {
     paddingTop: 60,
     paddingBottom: 20,
@@ -58,6 +61,8 @@ export const globalStyles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
+
+  // Styles for main container and card
   container: {
     flex: 1,
     justifyContent: "center",
@@ -81,6 +86,8 @@ export const globalStyles = StyleSheet.create({
     marginBottom: spacing.lg,
     color: colors.text,
   },
+
+  // Styles for input fields and buttons
   input: {
     borderWidth: 1,
     borderRadius: 8,
@@ -109,6 +116,8 @@ export const globalStyles = StyleSheet.create({
     marginTop: spacing.sm,
     color: colors.primaryDark,
   },
+
+  // Styles for footer
   footer: {
     paddingVertical: 12,
     alignItems: "center",
@@ -117,5 +126,24 @@ export const globalStyles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     color: colors.footerText,
+  },
+
+  // Styles for password input and visibility toggle
+  passwordWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  eyeButton: {
+    position: "absolute",
+    right: 16,
+    top: "50%",
+    transform: [{ translateY: -20 }],
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorText: {
+    color: "red",
+    marginBottom: 12,
+    textAlign: "center",
   },
 });

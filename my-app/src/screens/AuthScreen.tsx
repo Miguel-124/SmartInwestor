@@ -40,20 +40,25 @@ export default function AuthScreen() {
   const [dobDate, setDobDate] = useState<Date | null>(null);
   const [showDobPicker, setShowDobPicker] = useState(false);
   const [dobString, setDobString] = useState("");
+  const [isDateInput, setIsDateInput] = useState(false);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const logoutTimer = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    return () => {
       if (logoutTimer.current) clearTimeout(logoutTimer.current);
-    },
-    []
-  );
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -88,7 +93,12 @@ export default function AuthScreen() {
     try {
       let birthDate: Date | null;
       if (Platform.OS === "web") {
-        birthDate = dobString ? new Date(dobString) : null;
+        if (dobString) {
+          const [d, m, y] = dobString.split(".");
+          birthDate = new Date(+y, +m - 1, +d);
+        } else {
+          birthDate = null;
+        }
       } else {
         birthDate = dobDate;
       }
@@ -120,13 +130,18 @@ export default function AuthScreen() {
       }
 
       scheduleLogout(Date.now());
+
       setFirstName("");
       setLastName("");
       setDobDate(null);
       setDobString("");
+      setIsDateInput(false);
+
       setEmail("");
       setPassword("");
       setConfirm("");
+      setShowPassword(false);
+      setShowConfirm(false);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -178,34 +193,63 @@ export default function AuthScreen() {
               />
 
               {Platform.OS === "web" ? (
-                <View style={{ width: "100%", marginBottom: 16 }}>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      marginBottom: 4,
-                      color: colors.text,
-                    }}
-                  >
-                    Data urodzenia
-                  </Text>
-                  <View style={[globalStyles.input, { padding: 0 }]}>
-                    <input
-                      className="dobInput"
-                      type="date"
-                      value={dobString}
-                      onChange={(e) => setDobString(e.target.value)}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        padding: 12,
-                        fontSize: 16,
-                        border: "none",
-                        background: "transparent",
-                        outline: "none",
-                      }}
-                    />
+                <>
+                  <style>
+                    {`
+                      .dob-input {
+                        font-size: 14px;
+                      }
+                      .dob-input::placeholder {
+                        color: ${colors.placeholder};
+                        opacity: 1;
+                        font-size: 14px;
+                      }
+                    `}
+                  </style>
+                  <View style={{ width: "100%" }}>
+                    <View
+                      style={[
+                        globalStyles.input,
+                        { padding: 0, paddingLeft: 3, paddingRight: 20 },
+                      ]}
+                    >
+                      <input
+                        className="dob-input"
+                        type={isDateInput ? "date" : "text"}
+                        placeholder="Data urodzenia"
+                        value={
+                          isDateInput
+                            ? dobString
+                              ? (() => {
+                                  const [d, m, y] = dobString.split(".");
+                                  return `${y}-${m}-${d}`;
+                                })()
+                              : ""
+                            : dobString
+                        }
+                        onFocus={() => setIsDateInput(true)}
+                        onBlur={() => setIsDateInput(false)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (isDateInput) {
+                            const [y, m, d] = val.split("-");
+                            setDobString(`${d}.${m}.${y}`);
+                          } else {
+                            setDobString(val);
+                          }
+                        }}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          padding: 12,
+                          border: "none",
+                          background: "transparent",
+                          outline: "none",
+                        }}
+                      />
+                    </View>
                   </View>
-                </View>
+                </>
               ) : (
                 <>
                   <TouchableOpacity
@@ -247,26 +291,48 @@ export default function AuthScreen() {
             value={email}
             onChangeText={setEmail}
           />
-          <TextInput
-            style={globalStyles.input}
-            placeholder="Hasło"
-            placeholderTextColor={colors.placeholder}
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-          {mode === "register" && (
+
+          <View style={globalStyles.passwordWrapper}>
             <TextInput
-              style={globalStyles.input}
-              placeholder="Potwierdź hasło"
+              style={[globalStyles.input, { flex: 1 }]}
+              placeholder="Hasło"
               placeholderTextColor={colors.placeholder}
-              secureTextEntry
-              value={confirm}
-              onChangeText={setConfirm}
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
             />
+            <TouchableOpacity
+              onPress={() => setShowPassword((v) => !v)}
+              style={globalStyles.eyeButton}
+            >
+              <Text style={{ color: colors.placeholder }}>
+                {showPassword ? "🙈" : "👁️"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {mode === "register" && (
+            <View style={globalStyles.passwordWrapper}>
+              <TextInput
+                style={[globalStyles.input, { flex: 1 }]}
+                placeholder="Potwierdź hasło"
+                placeholderTextColor={colors.placeholder}
+                secureTextEntry={!showConfirm}
+                value={confirm}
+                onChangeText={setConfirm}
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirm((v) => !v)}
+                style={globalStyles.eyeButton}
+              >
+                <Text style={{ color: colors.placeholder }}>
+                  {showConfirm ? "🙈" : "👁️"}
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
 
-          {error && <Text style={styles.errorText}>{error}</Text>}
+          {error && <Text style={globalStyles.errorText}>{error}</Text>}
 
           <TouchableOpacity
             style={globalStyles.button}
@@ -299,11 +365,3 @@ export default function AuthScreen() {
     </ImageBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  errorText: {
-    color: "red",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-});
