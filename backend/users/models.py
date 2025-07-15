@@ -6,7 +6,7 @@ class CustomUser(AbstractUser):
     google_id = models.CharField(max_length=255, blank=True, null=True)
     avatar_url = models.URLField(blank=True, null=True)
 
-    USERNAME_FIELD = 'email'
+    #USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']  # bo username nadal jest wymagany w formularzach
 
     def __str__(self):
