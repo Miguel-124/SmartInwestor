@@ -1,4 +1,35 @@
+# Środowisko wirtualne
+venv/
+
+# Plik z tajnymi danymi
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# SQLite
+*.sqlite3
+
+# Logi
+*.log
+
+# IDE / system
+.DS_Store
+.vscode/
+.idea/
+
+# Django
+media/
+staticfiles/
+
+# Node (jeśli frontend w tym repo)
+node_modules/
+dist/
+build/
+```gitignore
+
+# Środowisko wirtualne
 venv/
 .env
-__pycache__/
-*.pyc
+

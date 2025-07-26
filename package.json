@@ -1,0 +1,7 @@
+{
+  "name": "smartinwestor-monorepo",
+  "private": true,
+  "scripts": {
+    "start:all": "docker compose up --build"
+  }
+}
