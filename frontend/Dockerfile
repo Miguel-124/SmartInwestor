@@ -6,7 +6,7 @@ WORKDIR /app
 
 # 3. Skopiuj definicje paczek i zainstaluj zależności
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # 4. Skopiuj cały kod
 COPY . .
