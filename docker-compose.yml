@@ -4,7 +4,7 @@ services:
     image: postgres:15
     restart: always
     env_file:
-      - ./backend/.env 
+      - ./.env
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
