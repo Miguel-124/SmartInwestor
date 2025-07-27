@@ -9,12 +9,12 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'username', 'password']
+        fields = ['id', 'email', 'password']
 
     def create(self, validated_data):
         user = User.objects.create_user(
+            username=validated_data['email'],  # username is still required in forms
             email=validated_data['email'],
-            username=validated_data['username'],
             password=validated_data['password']
         )
         return user
@@ -31,17 +31,12 @@ class LoginSerializer(serializers.Serializer):
         
         # generujemy tokeny
         refresh = RefreshToken.for_user(user)
-        access = refresh.access_token
 
         return {
             'refresh': str(refresh),
-            'access': str(access),
+            'access': str(refresh.access_token),
             'user': {
                 'id': user.id,
                 'email': user.email,
-                'username': user.username,
             }
         }
-    
-        data['user'] = user
-        return data

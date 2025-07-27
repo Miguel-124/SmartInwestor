@@ -134,7 +134,7 @@ SIMPLE_JWT = {
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
+# 
 AUTHENTICATION_BACKENDS = [
-    'users.backends.EmailBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]

@@ -29,7 +29,6 @@ class GoogleLoginView(APIView):
 
             user, created = CustomUser.objects.get_or_create(email=email)
             if created:
-                user.username = email
                 user.google_id = sub
                 user.avatar_url = picture
                 user.set_unusable_password()
@@ -42,7 +41,6 @@ class GoogleLoginView(APIView):
                 "user": {
                     "id": user.id,
                     "email": user.email,
-                    "username": user.username,
                     "avatar_url": user.avatar_url,
                 }
             })
@@ -62,7 +60,6 @@ class RegisterView(APIView):
                 "user": {
                     "id": user.id,
                     "email": user.email,
-                    "username": user.username,
                 }
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -70,16 +67,5 @@ class RegisterView(APIView):
 class LoginView(APIView):
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data['user']
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
-                "user": {
-                    "id": user.id,
-                    "email": user.email,
-                    "username": user.username,
-                }
-            })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)

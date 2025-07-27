@@ -8,7 +8,7 @@ class CustomUser(AbstractUser):
     is_google_account = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']  # bo username nadal jest wymagany w formularzach
+    REQUIRED_FIELDS = []  # bo username nadal jest wymagany w formularzach
 
     def __str__(self):
-        return self.username
+        return self.email
