@@ -1,7 +1,8 @@
+import React, { useState } from 'react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import type { CredentialResponse } from '@react-oauth/google';
 import axios from 'axios';
-import { useState } from 'react';
+import logo from 'assets/images/logo_SmartInwestor.jpeg';
 
 interface UserData {
   id: number;
@@ -36,7 +37,7 @@ export default function App() {
   const handleRegister = async () => {
     setError(null);
     try {
-      const res = await axios.post(
+      const res = await axios.post<AuthResponse>(
         'http://127.0.0.1:8000/api/auth/register/',
         { email, password }
       );
@@ -50,7 +51,7 @@ export default function App() {
   const handleLogin = async () => {
     setError(null);
     try {
-      const res = await axios.post(
+      const res = await axios.post<AuthResponse>(
         'http://127.0.0.1:8000/api/auth/login/',
         { email, password }
       );
@@ -64,11 +65,12 @@ export default function App() {
   const handleGoogle = async (resp: CredentialResponse) => {
     const id_token = resp.credential;
     if (!id_token) {
-      return setError('Brak tokenu Google');
+      setError('Brak tokenu Google');
+      return;
     }
     setError(null);
     try {
-      const res = await axios.post(
+      const res = await axios.post<AuthResponse>(
         'http://127.0.0.1:8000/api/auth/google/',
         { id_token }
       );
@@ -81,7 +83,8 @@ export default function App() {
   // Po zalogowaniu/rejestracji – pokazujemy dane
   if (user) {
     return (
-      <div style={{ padding: 40, maxWidth: 400, margin: 'auto' }}>
+      <div style={{ padding: 40, maxWidth: 400, margin: 'auto', textAlign: 'center' }}>
+        <img src={logo} alt="SmartInwestor Logo" style={{ width: 120, marginBottom: 20 }} />
         <h2>Zalogowany jako:</h2>
         <p><strong>{user.email}</strong></p>
         {user.avatar_url && (
@@ -94,7 +97,8 @@ export default function App() {
   // UI formularza
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID!}>
-      <div style={{ padding: 40, maxWidth: 400, margin: 'auto' }}>
+      <div style={{ padding: 40, maxWidth: 400, margin: 'auto', textAlign: 'center' }}>
+        <img src={logo} alt="SmartInwestor Logo" style={{ width: 120, marginBottom: 20 }} />
         <h2>{mode === 'login' ? 'Logowanie' : 'Rejestracja'}</h2>
 
         <input
@@ -132,15 +136,10 @@ export default function App() {
           </p>
         )}
 
-        <p style={{ marginTop: 20, textAlign: 'center' }}>
-          {mode === 'login'
-            ? 'Nie masz konta? '
-            : 'Masz już konto? '}
+        <p style={{ marginTop: 20 }}>
+          {mode === 'login' ? 'Nie masz konta? ' : 'Masz już konto? '}
           <button
-            onClick={() => {
-              setMode(mode === 'login' ? 'register' : 'login');
-              setError(null);
-            }}
+            onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(null); }}
             style={{ textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}
           >
             {mode === 'login' ? 'Zarejestruj się' : 'Zaloguj się'}
