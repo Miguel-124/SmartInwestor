@@ -22,6 +22,7 @@ class GoogleLoginView(APIView):
                 requests.Request(),
                 settings.GOOGLE_CLIENT_ID
             )
+            
             email = idinfo["email"]
             name = idinfo.get("name", "")
             picture = idinfo.get("picture", "")
