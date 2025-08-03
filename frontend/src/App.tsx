@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import type { CredentialResponse } from '@react-oauth/google';
 import axios from 'axios';
-import logo from 'assets/images/logo_SmartInwestor.jpeg';
+import logo from './assets/logo_SmartInwestor.jpeg';
 
 interface UserData {
   id: number;
