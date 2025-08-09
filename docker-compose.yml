@@ -14,17 +14,12 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py runserver 0.0.0.0:8000"
+    command: sh /app/entrypoint.sh python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./backend:/app
       - /app/venv
     env_file:
       - ./backend/.env
-    environment:
-      DB_HOST: db
-      DB_PORT: ${DB_PORT}
     ports:
       - "8000:8000"
     depends_on:
