@@ -34,3 +34,9 @@ class Portfolio(models.Model):
     def is_all(self) -> bool:
         # przyjęta konwencja nazwy systemowego portfela
         return self.name.strip().lower() == "all"
+    
+    @classmethod
+    def ensure_all_for(cls, user):
+        """Zwraca portfel ALL, tworząc go jeśli trzeba."""
+        obj, _ = cls.objects.get_or_create(owner=user, name="ALL")
+        return obj
