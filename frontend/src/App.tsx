@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import type { CredentialResponse } from '@react-oauth/google';
 import axios from 'axios';
@@ -8,6 +8,11 @@ interface UserData {
   id: number;
   email: string;
   avatar_url?: string;
+}
+
+interface Portfolio {
+  id: number;
+  name: string;
 }
 
 interface AuthResponse {
@@ -22,8 +27,13 @@ export default function App() {
   const [mode, setMode] = useState<Mode>('login');
   const [user, setUser] = useState<UserData | null>(null);
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [password, setPasswordInput] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // dodatkowe stany do testów po zalogowaniu
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [newPortfolioName, setNewPortfolioName] = useState('');
+  const [newPass, setNewPass] = useState('');
 
   // wspólna funkcja do ustawiania usera i tokenów
   const handleSuccess = (data: AuthResponse) => {
@@ -61,7 +71,7 @@ export default function App() {
     }
   };
 
-  // 3) Google OAuth login (i rejestracja)
+  // 3) Google OAuth login
   const handleGoogle = async (resp: CredentialResponse) => {
     const id_token = resp.credential;
     if (!id_token) {
@@ -80,21 +90,99 @@ export default function App() {
     }
   };
 
-  // Po zalogowaniu/rejestracji – pokazujemy dane
+  // 4) Wylogowanie
+  const handleLogout = async () => {
+    const refresh = localStorage.getItem("refreshToken");
+    if (!refresh) return;
+
+    try {
+      await axios.post("http://127.0.0.1:8000/api/auth/logout/", { refresh }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }
+      });
+    } catch (err) {
+      console.error("Błąd wylogowania", err);
+    } finally {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      setUser(null);
+    }
+  };
+
+  // 5) Pobranie portfeli
+  const fetchPortfolios = async () => {
+    try {
+      const res = await axios.get("http://127.0.0.1:8000/api/portfolios/", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }
+      });
+      setPortfolios(res.data);
+    } catch (err) {
+      console.error("Błąd pobierania portfeli", err);
+    }
+  };
+
+  // 6) Dodanie portfela
+  const addPortfolio = async (name: string) => {
+    try {
+      await axios.post("http://127.0.0.1:8000/api/portfolios/", { name }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }
+      });
+      fetchPortfolios();
+    } catch (err) {
+      console.error("Błąd dodawania portfela", err);
+    }
+  };
+
+  // 7) Ustawienie hasła
+  const handleSetPassword = async (newPassword: string) => {
+    try {
+      await axios.patch("http://127.0.0.1:8000/api/auth/set-password/", { new_password: newPassword }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }
+      });
+      alert("Hasło ustawione!");
+    } catch (err) {
+      console.error("Błąd ustawiania hasła", err);
+    }
+  };
+
+  // Widok po zalogowaniu
   if (user) {
     return (
-      <div style={{ padding: 40, maxWidth: 400, margin: 'auto', textAlign: 'center' }}>
-        <img src={logo} alt="SmartInwestor Logo" style={{ width: 120, marginBottom: 20 }} />
-        <h2>Zalogowany jako:</h2>
-        <p><strong>{user.email}</strong></p>
-        {user.avatar_url && (
-          <img src={user.avatar_url} alt="avatar" width={100} />
-        )}
+      <div style={{ padding: 20 }}>
+        <img src={logo} alt="SmartInwestor Logo" style={{ width: 100 }} />
+        <h2>Zalogowany jako: {user.email}</h2>
+        {user.avatar_url && <img src={user.avatar_url} alt="avatar" width={80} />}
+        
+        <hr />
+        <button onClick={handleLogout}>Wyloguj</button>
+
+        <hr />
+        <h3>Portfele</h3>
+        <button onClick={fetchPortfolios}>Pobierz portfele</button>
+        <ul>
+          {portfolios.map(p => <li key={p.id}>{p.name}</li>)}
+        </ul>
+
+        <input
+          value={newPortfolioName}
+          onChange={e => setNewPortfolioName(e.target.value)}
+          placeholder="Nazwa nowego portfela"
+        />
+        <button onClick={() => addPortfolio(newPortfolioName)}>Dodaj portfel</button>
+
+        <hr />
+        <h3>Ustaw hasło</h3>
+        <input
+          type="password"
+          value={newPass}
+          onChange={e => setNewPass(e.target.value)}
+          placeholder="Nowe hasło"
+        />
+        <button onClick={() => handleSetPassword(newPass)}>Ustaw</button>
       </div>
     );
   }
 
-  // UI formularza
+  // Widok logowania/rejestracji
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID!}>
       <div style={{ padding: 40, maxWidth: 400, margin: 'auto', textAlign: 'center' }}>
@@ -112,7 +200,7 @@ export default function App() {
           type="password"
           placeholder="Hasło"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={e => setPasswordInput(e.target.value)}
           style={{ width: '100%', padding: 8, marginBottom: 12 }}
         />
 
