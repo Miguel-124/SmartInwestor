@@ -15,6 +15,7 @@ class PortfolioAdmin(admin.ModelAdmin):
         (None, {"fields": ("owner", "name")}),
         ("Metadane", {"fields": ("created_at",)}),
     )
+    
 
     def owner_email(self, obj):
         return getattr(obj.owner, "email", "")
