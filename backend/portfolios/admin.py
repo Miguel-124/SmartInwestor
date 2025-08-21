@@ -11,6 +11,7 @@ class PortfolioAdmin(admin.ModelAdmin):
     ordering = ("owner", "name")
     readonly_fields = ("created_at",)
 
+
     fieldsets = (
         (None, {"fields": ("owner", "name")}),
         ("Metadane", {"fields": ("created_at",)}),
