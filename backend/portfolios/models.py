@@ -10,7 +10,6 @@ class Portfolio(models.Model):
         on_delete=models.CASCADE,
         related_name="portfolios"
     )
-    
     name = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
 
