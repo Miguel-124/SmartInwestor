@@ -21,7 +21,6 @@ class Portfolio(models.Model):
                 name="uq_portfolio_owner_lower_name"
             )
         ]
-        
         indexes = [
             Index(fields=["owner", "name"]),
             Index(Lower("name"), name="idx_portfolio_lower_name"),
