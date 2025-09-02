@@ -27,6 +27,7 @@ class Portfolio(models.Model):
         ]
         ordering = ["owner_id", "name"]
 
+
     def __str__(self):
         return f"{self.name} ({self.owner.email})"
 
