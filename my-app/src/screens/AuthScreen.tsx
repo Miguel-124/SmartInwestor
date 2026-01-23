@@ -24,6 +24,10 @@ import { Header } from "../components/Header";
 import { Card } from "../components/Card";
 import { Footer } from "../components/Footer";
 import { globalStyles, colors, sizes } from "../styles/global";
+// import { useNavigate } from "react-router-dom";
+import { useNavigation } from "@react-navigation/native";
+import type { NavigationProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../../App";
 
 const DateTimePicker =
   Platform.OS !== "web"
@@ -54,6 +58,8 @@ export default function AuthScreen() {
   const [user, setUser] = useState<any>(null);
   const logoutTimer = useRef<NodeJS.Timeout | null>(null);
 
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
   useEffect(() => {
     return () => {
       if (logoutTimer.current) clearTimeout(logoutTimer.current);
@@ -65,17 +71,34 @@ export default function AuthScreen() {
       const session = await getCurrentSession();
       if (session) {
         setUser(session.user);
-        scheduleLogout(session.timestamp);
+        scheduleLogout();
       }
     })();
   }, []);
 
-  const scheduleLogout = (loginTs: number) => {
-    const elapsed = Date.now() - loginTs;
-    const remaining = TTL - elapsed;
-    if (remaining <= 0) return handleLogout();
-    logoutTimer.current = setTimeout(handleLogout, remaining);
+  const scheduleLogout = () => {
+    if (logoutTimer.current) clearTimeout(logoutTimer.current);
+    logoutTimer.current = setTimeout(handleLogout, TTL);
   };
+
+  useEffect(() => {
+    const resetTimer = () => scheduleLogout();
+
+    window.addEventListener("mousemove", resetTimer);
+    window.addEventListener("keydown", resetTimer);
+    window.addEventListener("click", resetTimer);
+    window.addEventListener("scroll", resetTimer);
+
+    scheduleLogout();
+
+    return () => {
+      window.removeEventListener("mousemove", resetTimer);
+      window.removeEventListener("keydown", resetTimer);
+      window.removeEventListener("click", resetTimer);
+      window.removeEventListener("scroll", resetTimer);
+      if (logoutTimer.current) clearTimeout(logoutTimer.current);
+    };
+  }, [user]);
 
   const handleLogout = async () => {
     await logoutUser();
@@ -83,7 +106,7 @@ export default function AuthScreen() {
     setMode("login");
     Alert.alert(
       "Sesja wygasła",
-      "Zostałeś wylogowany z powodu braku aktywności."
+      "Zostałeś wylogowany z powodu braku aktywności.",
     );
   };
 
@@ -129,7 +152,9 @@ export default function AuthScreen() {
         Alert.alert("Zalogowano", `Witaj z powrotem, ${logged.firstName}!`);
       }
 
-      scheduleLogout(Date.now());
+      navigation.navigate("Dashboard");
+
+      scheduleLogout();
 
       setFirstName("");
       setLastName("");
@@ -149,17 +174,14 @@ export default function AuthScreen() {
     }
   };
 
+  useEffect(() => {
+    if (user) {
+      navigation.navigate("Dashboard");
+    }
+  }, [user, navigation]);
+
   if (user) {
-    return (
-      <View style={[globalStyles.container, { justifyContent: "center" }]}>
-        <Text style={[globalStyles.title, { marginBottom: 16 }]}>
-          Witaj, {user.firstName} {user.lastName}!
-        </Text>
-        <TouchableOpacity style={globalStyles.button} onPress={handleLogout}>
-          <Text style={globalStyles.buttonText}>Wyloguj</Text>
-        </TouchableOpacity>
-      </View>
-    );
+    return null;
   }
 
   return (
@@ -343,8 +365,8 @@ export default function AuthScreen() {
               {loading
                 ? "Proszę czekać..."
                 : mode === "login"
-                ? "Zaloguj się"
-                : "Zarejestruj się"}
+                  ? "Zaloguj się"
+                  : "Zarejestruj się"}
             </Text>
           </TouchableOpacity>
 
