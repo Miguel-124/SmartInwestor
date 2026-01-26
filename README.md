@@ -1,70 +1,84 @@
-# SmartInwestor
+# 💼 SmartInvestor
+### Smart web application for investment analysis
 
-# 💼 SmartInvestor – aplikacja do analizy inwestycji
+![status](https://img.shields.io/badge/status-MVP-blue)
+![frontend](https://img.shields.io/badge/frontend-Vue.js-42b883)
+![backend](https://img.shields.io/badge/backend-FastAPI-009688)
+![database](https://img.shields.io/badge/database-PostgreSQL-336791)
 
-**SmartInvestor** to koncepcyjna aplikacja webowa, której celem jest wspomaganie inwestorów indywidualnych w zarządzaniu portfelem inwestycyjnym.
+> **SmartInvestor** is a conceptual web application designed to support individual investors  
+> in managing and analyzing their investment portfolios.
 
-Projekt powstał jako odpowiedź na rosnącą potrzebę dostępnych, inteligentnych narzędzi, które pozwalają na wgląd w strukturę inwestycji oraz analizę trendów rynkowych.
+The project was created in response to the growing need for **accessible and intelligent tools**  
+that provide insight into investment structures and market trends.
 
----
 
-## 🎯 Cel projektu
+## 🎯 Project Goal
 
-Głównym założeniem SmartInvestor jest stworzenie intuicyjnego narzędzia wspierającego inwestorów przy:
-- monitorowaniu portfela (akcje, ETF-y, kryptowaluty),
-- analizie podstawowych danych rynkowych,
-- wstępnym rozpoznaniu trendów inwestycyjnych.
+The main goal of SmartInvestor is to create an **intuitive tool** that helps investors with:
 
----
+- monitoring portfolios (stocks, ETFs, cryptocurrencies)
+- analyzing basic market data
+- initial identification of investment trends
 
-## 🔧 Technologie
 
-Projekt opiera się na nowoczesnym stacku technologicznym:
+## 🔧 Technology Stack
 
-- **Frontend**: Vue.js + TypeScript, Tailwind CSS  
-- **Backend**: Python (FastAPI)  
-- **Baza danych**: PostgreSQL  
-- **Integracje**: API zewnętrzne do pobierania danych rynkowych (np. notowania)
+**Frontend**
+- Vue.js
+- TypeScript
+- Tailwind CSS
 
----
+**Backend**
+- Python (FastAPI)
 
-## 📌 Status
+**Database**
+- PostgreSQL
 
-Projekt w fazie aktywnego rozwoju.  
-Pierwszy etap (MVP) obejmuje:
-- dodawanie aktywów do portfela,
-- integrację z zewnętrznymi źródłami danych,
-- wizualizacje podstawowych informacji o inwestycjach.
+**Integrations**
+- External APIs for market data (e.g. price quotes)
 
----
 
-## 🧠 Dla kogo?
+## 🚀 Project Status
 
-SmartInvestor jest kierowany głównie do:
-- inwestorów indywidualnych (początkujących i średniozaawansowanych),
-- osób zainteresowanych wizualną analizą swoich inwestycji,
-- wszystkich, którzy chcą uporządkować swoje decyzje inwestycyjne.
+The project is currently in **active development**.
 
----
+### MVP includes:
+- adding assets to the portfolio
+- integration with external data sources
+- visualization of basic investment information
 
-## 🛠️ Przyszłe kierunki rozwoju
 
-W kolejnych etapach planowane jest:
-- rozbudowanie funkcji analitycznych,
-- integracja AI/ML (dla zainteresowanych predykcją trendów),
-- opcjonalna wersja mobilna.
+## 🧠 Target Audience
 
----
+SmartInvestor is intended for:
 
-## 📄 Uwaga
+- individual investors (beginners and intermediate)
+- users interested in visual investment analysis
+- anyone who wants to organize their investment decisions
 
-To publiczne repozytorium ma charakter prezentacyjny.  
-Nie zawiera wszystkich szczegółów funkcjonalnych i implementacyjnych projektu.
 
----
+## 🛠️ Future Development
 
-## 📬 Kontakt
+Planned future improvements include:
 
-Chcesz dowiedzieć się więcej lub nawiązać współpracę?  
-📧 michalgorecki124@gmail.com
-🌐 https://www.linkedin.com/in/michał-górecki124/
+- extended analytical features
+- AI/ML integration (for those interested in trend prediction)
+- optional mobile version
+
+
+## 📄 Disclaimer
+
+This public repository is for **presentation purposes only**.  
+It does not contain all functional and implementation details of the project.
+
+
+## 📬 Contact
+
+**Michał**  
+📧 [michalgorecki124@gmail.com](mailto:michalgorecki124@gmail.com)  
+🌐 [LinkedIn](https://www.linkedin.com/in/michał-górecki124/)
+
+**Oskar**  
+📧 [oskarbrozdaa@gmail.com](mailto:oskarbrozdaa@gmail.com)  
+🌐 [LinkedIn](https://pl.linkedin.com/in/oskarbrozda)
