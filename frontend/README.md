@@ -1,20 +1,18 @@
-# SmartInwestor – Frontend (Expo Web + React Native + TS)
+# SmartInvestor — Frontend (Expo Web · React Native · TypeScript)
 
-Nowoczesny interfejs dla inwestorów indywidualnych: przegląd portfela, wizualizacja wskaźników, podpowiedzi alokacyjne. MVP działa w **przeglądarce** (Expo Web) i jest gotowe do prezentacji na obronie.
+A modern interface for individual investors: clear portfolio overview, indicator visualizations, and allocation hints. This MVP runs **in the browser** via Expo Web and is ready for demo/defense.
 
-## ⚙️ Stos technologiczny
 
-- **React Native + TypeScript** (render na web przez `react-native-web`)
-- **Expo** (dev-server, bundling)
+## Tech Stack
+- **React Native + TypeScript** (rendered on web via `react-native-web`)
+- **Expo** (dev server & bundler)
 - **React Navigation** (routing)
-- **Recharts** (wykresy)
-- **AsyncStorage** (web: IndexedDB) – lokalne logowanie/sesja (TTL ~30 min)
+- **Recharts** (charts)
+- **AsyncStorage** (IndexedDB on web) for simple local auth/session
 
-## 🚀 Uruchomienie (dev)
 
+## Getting Started (dev)
 ```bash
 cd frontend
 npm i
-npm run dev      # alias: expo start --web
-
-```
+npm run dev   # alias for: expo start --web
