@@ -10,7 +10,10 @@ web-build/
 expo-env.d.ts
 
 # Native
-
-# macOS
 .DS_Store
-**/.DS_Store
+
+# Python / env
+venv/
+.env
+__pycache__/
+*.pyc
