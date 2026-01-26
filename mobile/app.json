@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "SmartInwestor",
+    "slug": "smartinwestor",
+    "owner": "mikemiguel12",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/logo_SmartInwestor.jpeg",
+    "scheme": "smartinwestor",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/images/logo_SmartInwestor.jpeg",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "newArchEnabled": false
+    },
+    "android": {
+      "package": "com.smartinwestor.app",
+      "newArchEnabled": false
+
+    },
+    "web": {
+      "favicon": "./assets/images/logo_SmartInwestor.jpeg"
+    },
+    "experiments": {
+      "newArchEnabled": true
+    },
+    "extra": {
+      "expoClientId": "410779698652-i1l7r5r33lj6vhh2egfl686k0m14fgoj.apps.googleusercontent.com",
+      "iosClientId": "410779698652-i1l7r5r33lj6vhh2egfl686k0m14fgoj.apps.googleusercontent.com",
+      "androidClientId": "YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com",
+      "webClientId": "410779698652-1kl6kjtcsknke60je33r4a9ba3nqdaav.apps.googleusercontent.com"
+    }
+  }
+}
