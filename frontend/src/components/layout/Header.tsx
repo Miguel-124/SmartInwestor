@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Platform,
 } from "react-native";
-import { colors } from "../styles/global";
+import { colors } from "../../styles/global";
 
 interface Tab {
   label: string;
@@ -36,7 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
       <View style={styles.inner}>
         <View style={styles.left}>
           <Image
-            source={require("../../assets/logo.jpg")}
+            source={require("../../../assets/logo.jpg")}
             style={styles.logo}
             resizeMode="contain"
           />

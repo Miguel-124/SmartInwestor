@@ -1,10 +1,10 @@
 import React, { FC, useMemo } from "react";
-import { Header } from "../components/Header";
-import { Footer } from "../components/Footer";
-import { SummaryCard } from "../components/SummaryCard";
-import { PortfolioLineChart } from "../components/PortfolioLineChart";
-import { AllocationPieChart } from "../components/AllocationPieChart";
-import { HoldingsTable } from "../components/HoldingsTable";
+import { Header } from "../components/layout/Header";
+import { Footer } from "../components/layout/Footer";
+import { SummaryCard } from "../components/data/SummaryCard";
+import { PortfolioLineChart } from "../features/portfolio/components/PortfolioLineChart";
+import { AllocationPieChart } from "../features/portfolio/components/AllocationPieChart";
+import { HoldingsTable } from "../features/portfolio/components/HoldingsTable";
 //import { CorrelationHeatmap } from "../components/CorrelationHeatmap";
 //import { Recommendations } from "../components/Recommendations";
 import { portfolioModel } from "../models/Portfolio";
@@ -22,11 +22,11 @@ const MainScreen: FC = () => {
   } = portfolioModel;
   const formattedTotal = useMemo(
     () => `$${totalValue.toLocaleString()}`,
-    [totalValue]
+    [totalValue],
   );
   const dailyValue = useMemo(
     () => `$${((totalValue * dailyChange) / 100).toFixed(2)}`,
-    [totalValue, dailyChange]
+    [totalValue, dailyChange],
   );
 
   return (

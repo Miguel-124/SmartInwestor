@@ -20,9 +20,9 @@ import {
   validateRegistration,
   RegistrationData,
 } from "../utils/checkValidation";
-import { Header } from "../components/Header";
+import { Header } from "../components/layout/Header";
 import { Card } from "../components/Card";
-import { Footer } from "../components/Footer";
+import { Footer } from "../components/layout/Footer";
 import { globalStyles, colors, sizes } from "../styles/global";
 // import { useNavigate } from "react-router-dom";
 import { useNavigation } from "@react-navigation/native";
