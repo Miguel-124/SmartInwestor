@@ -1,19 +1,24 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
-import { lightTheme /*, darkTheme*/ } from "./light";
-import { ThemeType } from "./types";
+import React, { createContext, useContext, useMemo, useState } from "react";
+import { lightTheme } from "./light";
+import { darkTheme } from "./dark";
+import type { ThemeType } from "./types";
 
-const ThemeContext = createContext<{
-  theme: ThemeType;
-  setTheme: (t: ThemeType) => void;
-}>({ theme: lightTheme, setTheme: () => {} });
+type Mode = "light" | "dark";
+type ThemeCtx = { theme: ThemeType; mode: Mode; setMode: (m: Mode) => void };
 
-export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useState<ThemeType>(lightTheme);
+const ThemeContext = createContext<ThemeCtx>({
+  theme: lightTheme,
+  mode: "light",
+  setMode: () => {},
+});
+
+export const useTheme = () => useContext(ThemeContext);
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [mode, setMode] = useState<Mode>("light");
+  const theme = mode === "dark" ? darkTheme : lightTheme;
+  const value = useMemo(() => ({ theme, mode, setMode }), [theme, mode]);
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
-};
-
-export const useTheme = () => useContext(ThemeContext).theme;
+}

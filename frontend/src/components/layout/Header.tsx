@@ -8,6 +8,7 @@ import {
   Platform,
 } from "react-native";
 import { colors } from "../../styles/global";
+import { ThemeSwitch } from "@/components/ThemeSwitch";
 
 interface Tab {
   label: string;
@@ -41,6 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
             resizeMode="contain"
           />
           <Text style={styles.appName}>{title}</Text>
+          <ThemeSwitch />
         </View>
 
         {isLoggedIn && (
