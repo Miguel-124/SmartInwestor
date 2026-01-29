@@ -13,25 +13,17 @@ export default function LoginScreen() {
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
 
-  const redirectUri = AuthSession.makeRedirectUri({
-    useProxy: true,
-  } as any);
+  const redirectUri = AuthSession.makeRedirectUri();
 
   const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: Constants.expoConfig?.extra?.expoClientId,
     iosClientId: Constants.expoConfig?.extra?.iosClientId,
     webClientId: Constants.expoConfig?.extra?.webClientId,
+    androidClientId: Constants.expoConfig?.extra?.androidClientId,
     redirectUri,
-    extraParams: {
-      prompt: 'select_account',
-      access_type: 'offline',
-      include_granted_scopes: 'true',
-    },
   });
 
   useEffect(() => {
     if (response?.type === 'success') {
-      console.log('Redirect URI:', redirectUri);
       const { authentication } = response;
       if (authentication?.accessToken) {
         fetch('https://www.googleapis.com/userinfo/v2/me', {
@@ -45,7 +37,8 @@ export default function LoginScreen() {
               accessToken: authentication.accessToken,
             });
             router.replace('/homeScreen');
-          });
+          })
+          .catch(err => console.error("Błąd pobierania danych:", err));
       }
     }
   }, [response]);
@@ -59,11 +52,17 @@ export default function LoginScreen() {
       </Text>
 
       <TouchableOpacity
-        style={styles.button}
-        onPress={() => promptAsync()}
+        style={[styles.button, !request && { opacity: 0.5 }]} // Wizualna informacja, że ładuje
+        onPress={() => {
+          if (request) {
+            promptAsync();
+          }
+        }}
         disabled={!request}
       >
-        <Text style={styles.buttonText}>Zaloguj przez Google</Text>
+        <Text style={styles.buttonText}>
+          {request ? "Zaloguj przez Google" : "Inicjalizacja..."}
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity

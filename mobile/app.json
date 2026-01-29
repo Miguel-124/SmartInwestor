@@ -13,15 +13,24 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "newArchEnabled": false
+      "bundleIdentifier": "com.smartinwestor.app",
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.410779698652-0u3r5agtuieo0c1hhgtsm56hlmnagmjc" 
+            ]
+          }
+        ]
+      }
     },
     "android": {
-      "package": "com.smartinwestor.app",
-      "newArchEnabled": false
-
+      "package": "com.smartinwestor.app"
     },
     "web": {
       "favicon": "./assets/images/logo_SmartInwestor.jpeg"
@@ -30,10 +39,16 @@
       "newArchEnabled": true
     },
     "extra": {
-      "expoClientId": "410779698652-i1l7r5r33lj6vhh2egfl686k0m14fgoj.apps.googleusercontent.com",
-      "iosClientId": "410779698652-i1l7r5r33lj6vhh2egfl686k0m14fgoj.apps.googleusercontent.com",
+      "expoClientId": "410779698652-1kl6kjtcsknke60je33r4a9ba3nqdaav.apps.googleusercontent.com",
+      "iosClientId": "410779698652-0u3r5agtuieo0c1hhgtsm56hlmnagmjc.apps.googleusercontent.com",
       "androidClientId": "YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com",
       "webClientId": "410779698652-1kl6kjtcsknke60je33r4a9ba3nqdaav.apps.googleusercontent.com"
-    }
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker",
+      "expo-font",
+      "expo-router",
+      "expo-web-browser"
+    ]
   }
 }
