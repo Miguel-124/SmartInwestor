@@ -1,4 +1,4 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
+const API_URL = (globalThis as any)?.process?.env?.EXPO_PUBLIC_API_URL ?? "";
 
 export async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(API_URL + path, {
