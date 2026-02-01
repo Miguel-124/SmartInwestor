@@ -56,7 +56,7 @@ export default function AuthScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const logoutTimer = useRef<NodeJS.Timeout | null>(null);
+  const logoutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 

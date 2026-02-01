@@ -9,6 +9,8 @@ import {
 } from "react-native";
 import { colors } from "../../styles/global";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
+import { useNavigation } from "@react-navigation/native";
+const nav = useNavigation<any>();
 
 interface Tab {
   label: string;
@@ -57,6 +59,15 @@ export const Header: React.FC<HeaderProps> = ({
                 ]}
               >
                 <Text style={styles.tabText}>{tab.label}</Text>
+                <Text onPress={() => nav.navigate("Portfolio", { id: "demo" })}>
+                  Portfolio
+                </Text>
+                <Text onPress={() => nav.navigate("Metrics", { id: "demo" })}>
+                  Metrics
+                </Text>
+                <Text onPress={() => nav.navigate("Advice", { id: "demo" })}>
+                  Advice
+                </Text>
               </Pressable>
             ))}
           </View>

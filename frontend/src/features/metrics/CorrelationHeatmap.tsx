@@ -1,5 +1,5 @@
 import React, { FC, memo } from "react";
-import { Recommendation } from "../models/Portfolio";
+import { Recommendation } from "../portfolio/hooks/useAdviceQuery";
 
 interface RecommendationsProps {
   items: Recommendation[];
@@ -11,7 +11,7 @@ export const Recommendations: FC<RecommendationsProps> = memo(({ items }) => (
       {items.map((r) => (
         <li
           key={r.id}
-          className={r.type === "risk" ? "text-red-600" : "text-purple-700"}
+          className={r.type === "Risk" ? "text-red-600" : "text-purple-700"}
         >
           {r.text}
         </li>
