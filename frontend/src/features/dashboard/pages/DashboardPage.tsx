@@ -1,9 +1,19 @@
-import { Alert, Box, CircularProgress, Stack, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Card,
+  CircularProgress,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { useDashboardSummaryQuery } from "../api/hooks";
 import { PortfolioPieChart } from "../components/PortfolioPieChart";
 import { PortfolioAssetsTable } from "../components/PortfolioAssetsTable";
 import { AssetsLineChart } from "../components/AssetsLineChart";
 import { useMeQuery } from "../../auth/api/useMeQuery";
+import { useNavigate } from "react-router-dom";
+
+import { CardActionArea } from "@mui/material";
 
 function formatMoney(value: number, currency: string) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency }).format(
@@ -17,6 +27,8 @@ export function DashboardPage() {
 
   const isLoading = meQuery.isLoading || summaryQuery.isLoading;
   const isError = meQuery.isError || summaryQuery.isError;
+
+  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -88,7 +100,14 @@ export function DashboardPage() {
         }}
       >
         <PortfolioPieChart items={pieItems} currency={data.currency} />
-        <AssetsLineChart history={data.history} currency={data.currency} />
+        <Card sx={{ borderRadius: 4 }}>
+          <CardActionArea
+            onClick={() => navigate("/charts")}
+            aria-label="Otwórz szczegółowe wykresy"
+          >
+            <AssetsLineChart history={data.history} currency={data.currency} />
+          </CardActionArea>
+        </Card>
       </Box>
 
       <PortfolioAssetsTable

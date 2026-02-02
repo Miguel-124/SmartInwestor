@@ -16,6 +16,7 @@ import { PrivacyPolicyPage } from "../features/legal/pages/PrivacyPolicyPage";
 import { TermsPage } from "../features/legal/pages/TermsPage";
 import { PublicNotFoundPage } from "../shared/pages/PublicNotFoundPage";
 import { PrivateNotFoundPage } from "../shared/pages/PrivateNotFoundPage";
+import { ChartsPage } from "../features/charts/pages/ChartsPage";
 
 export const router = createBrowserRouter([
   {
@@ -45,6 +46,7 @@ export const router = createBrowserRouter([
       { path: "/analysis", element: <AnalysisPage /> },
       { path: "/profile/settings", element: <ProfileSettingsPage /> },
       { path: "*", element: <PrivateNotFoundPage /> },
+      { path: "/charts", element: <ChartsPage /> },
     ],
   },
 ]);
