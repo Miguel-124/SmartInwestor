@@ -1,5 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { listPortfolios } from "../db/portfoliosDb";
+import { getUser } from "../db/usersDb";
 
 function isIsoDateString(v: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -73,7 +74,7 @@ export const chartsHandlers = [
     const points = clampInt(url.searchParams.get("points"), 2, 50, 20);
 
     const currency = "PLN";
-    const db = listPortfolios();
+    const db = listPortfolios(getUser().id);
 
     const portfolios = db.map((p) => {
       const assets = p.assets.map((a) => ({

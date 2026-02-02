@@ -1,4 +1,5 @@
 import { http, HttpResponse } from "msw";
+import { getUser } from "../db/usersDb";
 import {
   addAsset,
   createPortfolio,
@@ -37,7 +38,7 @@ export const portfoliosHandlers = [
     const unauthorized = requireAuth(request);
     if (unauthorized) return unauthorized;
 
-    return HttpResponse.json({ portfolios: listPortfolios() });
+    return HttpResponse.json({ portfolios: listPortfolios(getUser().id) });
   }),
 
   http.post("/api/portfolios", async ({ request }) => {
@@ -56,7 +57,7 @@ export const portfoliosHandlers = [
       );
     }
 
-    const p = createPortfolio(name);
+    const p = createPortfolio(getUser().id, name);
     return HttpResponse.json(p, { status: 201 });
   }),
 
@@ -77,7 +78,7 @@ export const portfoliosHandlers = [
       );
     }
 
-    const updated = updatePortfolio(id, name);
+    const updated = updatePortfolio(getUser().id, id, name);
     if (!updated)
       return HttpResponse.json({ message: "Not found" }, { status: 404 });
 
@@ -89,7 +90,7 @@ export const portfoliosHandlers = [
     if (unauthorized) return unauthorized;
 
     const id = String(params.id);
-    const ok = removePortfolio(id);
+    const ok = removePortfolio(getUser().id, id);
     if (!ok)
       return HttpResponse.json({ message: "Not found" }, { status: 404 });
 
@@ -134,7 +135,7 @@ export const portfoliosHandlers = [
       );
     }
 
-    const a = addAsset(portfolioId, {
+    const a = addAsset(getUser().id, portfolioId, {
       symbol,
       name,
       quantity,
@@ -218,7 +219,7 @@ export const portfoliosHandlers = [
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const updated = updateAsset(portfolioId, assetId, patch as any);
+      const updated = updateAsset(getUser().id, portfolioId, assetId, patch);
       if (!updated)
         return HttpResponse.json({ message: "Not found" }, { status: 404 });
 
@@ -233,7 +234,7 @@ export const portfoliosHandlers = [
     const portfolioId = String(params.id);
     const assetId = String(params.assetId);
 
-    const ok = removeAsset(portfolioId, assetId);
+    const ok = removeAsset(getUser().id, portfolioId, assetId);
     if (!ok)
       return HttpResponse.json({ message: "Not found" }, { status: 404 });
 

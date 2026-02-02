@@ -1,4 +1,5 @@
 import { http, HttpResponse } from "msw";
+import { setUserFromRegister } from "../db/usersDb";
 
 type RegisterBody = {
   firstName?: string;
@@ -20,10 +21,16 @@ export const authHandlers = [
 
     if (body.email.toLowerCase() === "taken@example.com") {
       return HttpResponse.json(
-        { message: "Email jest istnieje" },
+        { message: "Email jest już zajęty" },
         { status: 409 },
       );
     }
+
+    setUserFromRegister({
+      firstName: body.firstName,
+      lastName: body.lastName,
+      email: body.email,
+    });
 
     return HttpResponse.json({
       ok: true,
@@ -46,7 +53,6 @@ export const authHandlers = [
       );
     }
 
-    // symulacja: email zajęty
     if (body.email.toLowerCase() === "taken@example.com") {
       return HttpResponse.json(
         { message: "Email jest już zajęty" },
@@ -54,6 +60,20 @@ export const authHandlers = [
       );
     }
 
-    return HttpResponse.json({ ok: true });
+    setUserFromRegister({
+      firstName: body.firstName,
+      lastName: body.lastName,
+      email: body.email,
+    });
+
+    return HttpResponse.json({
+      ok: true,
+      token: "mock-token-123",
+      user: {
+        firstName: body.firstName,
+        lastName: body.lastName,
+        email: body.email,
+      },
+    });
   }),
 ];
