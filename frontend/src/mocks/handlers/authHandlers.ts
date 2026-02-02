@@ -1,6 +1,5 @@
 import { http, HttpResponse } from "msw";
 
-type LoginBody = { email?: string; password?: string };
 type RegisterBody = {
   firstName?: string;
   lastName?: string;
@@ -9,26 +8,31 @@ type RegisterBody = {
 };
 
 export const authHandlers = [
-  http.post("/api/auth/login", async ({ request }) => {
-    const body = (await request.json().catch(() => ({}))) as LoginBody;
+  http.post("/api/auth/register", async ({ request }) => {
+    const body = (await request.json().catch(() => ({}))) as RegisterBody;
 
-    // prosta symulacja błędu
-    if (!body.email || !body.password) {
+    if (!body.firstName || !body.lastName || !body.email || !body.password) {
       return HttpResponse.json(
-        { message: "Brak danych logowania" },
+        { message: "Brak danych rejestracji" },
         { status: 400 },
       );
     }
-    if (body.password === "wrong-password") {
+
+    if (body.email.toLowerCase() === "taken@example.com") {
       return HttpResponse.json(
-        { message: "Nieprawidłowy email lub hasło" },
-        { status: 401 },
+        { message: "Email jest istnieje" },
+        { status: 409 },
       );
     }
 
     return HttpResponse.json({
+      ok: true,
       token: "mock-token-123",
-      user: { firstName: "Jan", lastName: "Kowalski", email: body.email },
+      user: {
+        firstName: body.firstName,
+        lastName: body.lastName,
+        email: body.email,
+      },
     });
   }),
 

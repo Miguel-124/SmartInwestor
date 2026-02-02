@@ -39,7 +39,7 @@ export function AssetsLineChart({
     <Paper
       sx={{
         p: { xs: 2.5, md: 3 },
-        borderRadius: 4,
+        borderRadius: 2,
         border: "1px solid",
         borderColor: "divider",
       }}

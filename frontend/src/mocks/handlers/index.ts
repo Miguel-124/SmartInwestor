@@ -3,6 +3,7 @@ import { dashboardHandlers } from "./dashboardHandlers";
 import { userHandlers } from "./userHandlers";
 import { portfoliosHandlers } from "./portfoliosHandlers";
 import { chartsHandlers } from "./chartsHandlers";
+import { onboardingHandlers } from "./onboardingHandlers";
 
 export const handlers = [
   ...authHandlers,
@@ -10,4 +11,5 @@ export const handlers = [
   ...userHandlers,
   ...portfoliosHandlers,
   ...chartsHandlers,
+  ...onboardingHandlers,
 ];
