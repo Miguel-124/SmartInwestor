@@ -10,10 +10,12 @@ import { MetricsPage } from "../features/metrics/pages/MetricsPage";
 import { AnalysisPage } from "../features/analysis/pages/AnalysisPage";
 import { ProfileSettingsPage } from "../features/profile/pages/ProfileSettingsPage";
 import { ProfileAboutPage } from "../features/profile/pages/ProfileAboutPage";
-import { ProfilePrivacyPage } from "../features/profile/pages/ProfilePrivacyPage";
-import { ProfileRodoPage } from "../features/profile/pages/ProfileRodoPage";
 import { ProfileHelpPage } from "../features/profile/pages/ProfileHelpPage";
 import { RequireAuth } from "./RequireAuth";
+import { PrivacyPolicyPage } from "../features/legal/pages/PrivacyPolicyPage";
+import { TermsPage } from "../features/legal/pages/TermsPage";
+import { PublicNotFoundPage } from "../shared/pages/PublicNotFoundPage";
+import { PrivateNotFoundPage } from "../shared/pages/PrivateNotFoundPage";
 
 export const router = createBrowserRouter([
   {
@@ -22,6 +24,11 @@ export const router = createBrowserRouter([
       { path: "/login", element: <LoginPage /> },
       { path: "/register", element: <RegisterPage /> },
       { path: "/onboarding", element: <OnboardingPage /> },
+      { path: "/privacy-policy", element: <PrivacyPolicyPage /> },
+      { path: "/terms", element: <TermsPage /> },
+      { path: "/profile/about", element: <ProfileAboutPage /> },
+      { path: "/profile/help", element: <ProfileHelpPage /> },
+      { path: "*", element: <PublicNotFoundPage /> },
     ],
   },
   {
@@ -37,10 +44,7 @@ export const router = createBrowserRouter([
       { path: "/metrics", element: <MetricsPage /> },
       { path: "/analysis", element: <AnalysisPage /> },
       { path: "/profile/settings", element: <ProfileSettingsPage /> },
-      { path: "/profile/about", element: <ProfileAboutPage /> },
-      { path: "/profile/privacy", element: <ProfilePrivacyPage /> },
-      { path: "/profile/rodo", element: <ProfileRodoPage /> },
-      { path: "/profile/help", element: <ProfileHelpPage /> },
+      { path: "*", element: <PrivateNotFoundPage /> },
     ],
   },
 ]);
