@@ -50,6 +50,20 @@ function formatQty(value: number) {
   );
 }
 
+function formatPurchaseDate(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+
+  // const date = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
+  // const monthName = new Intl.DateTimeFormat("pl-PL", { month: "short" }).format(
+  //   date,
+  // );
+
+  const dd = String(d).padStart(2, "0");
+  const mm = String(m).padStart(2, "0");
+
+  return `${dd}.${mm}.${y}`;
+}
+
 export function PortfoliosPage() {
   const currency = "PLN"; // na MVP stałe; później z profilu lub API
 
@@ -212,27 +226,47 @@ export function PortfoliosPage() {
                 <Box sx={{ overflowX: "auto" }}>
                   <Table
                     size="small"
-                    sx={{ minWidth: 760 }}
                     aria-label={`assets-table-${p.id}`}
+                    sx={{
+                      minWidth: 920,
+                      tableLayout: "fixed",
+                      "& th, & td": { whiteSpace: "nowrap" },
+                      "& td:first-of-type": { whiteSpace: "normal" }, // nazwa może się zawijać
+                    }}
                   >
                     <TableHead>
                       <TableRow>
-                        <TableCell sx={{ fontWeight: 800 }}>Nazwa</TableCell>
-                        <TableCell sx={{ fontWeight: 800 }}>Symbol</TableCell>
-                        <TableCell sx={{ fontWeight: 800 }}>
+                        <TableCell sx={{ fontWeight: 800, width: 320 }}>
+                          Nazwa
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 800, width: 110 }}>
+                          Symbol
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 800, width: 120 }}>
                           Data zakupu
                         </TableCell>
-
-                        <TableCell sx={{ fontWeight: 800 }} align="right">
+                        <TableCell
+                          sx={{ fontWeight: 800, width: 110 }}
+                          align="right"
+                        >
                           Ilość
                         </TableCell>
-                        <TableCell sx={{ fontWeight: 800 }} align="right">
+                        <TableCell
+                          sx={{ fontWeight: 800, width: 140 }}
+                          align="right"
+                        >
                           Cena
                         </TableCell>
-                        <TableCell sx={{ fontWeight: 800 }} align="right">
+                        <TableCell
+                          sx={{ fontWeight: 800, width: 160 }}
+                          align="right"
+                        >
                           Wartość
                         </TableCell>
-                        <TableCell sx={{ fontWeight: 800 }} align="right">
+                        <TableCell
+                          sx={{ fontWeight: 800, width: 120 }}
+                          align="right"
+                        >
                           Akcje
                         </TableCell>
                       </TableRow>
@@ -255,7 +289,9 @@ export function PortfoliosPage() {
                             <TableCell sx={{ fontWeight: 800 }}>
                               {a.symbol}
                             </TableCell>
-                            <TableCell>{a.purchasedAt}</TableCell>
+                            <TableCell>
+                              {formatPurchaseDate(a.purchasedAt)}
+                            </TableCell>
                             <TableCell align="right">
                               {formatQty(a.quantity)}
                             </TableCell>
