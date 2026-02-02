@@ -1,12 +1,12 @@
 import { Outlet } from "react-router-dom";
 import { Box, Container } from "@mui/material";
-import { AppHeader } from "../shared/ui/AppHeader";
-import { AppFooter } from "../shared/ui/AppFooter";
+import { AppPrivateHeader } from "../shared/UI/AppPrivateHeader";
+import { AppFooter } from "../shared/UI/AppFooter";
 
 export function PrivateLayout() {
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <AppHeader />
+      <AppPrivateHeader />
       <Container maxWidth="lg" sx={{ flex: 1, py: 3 }}>
         <Outlet />
       </Container>

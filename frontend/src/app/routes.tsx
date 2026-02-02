@@ -17,11 +17,13 @@ import { TermsPage } from "../features/legal/pages/TermsPage";
 import { PublicNotFoundPage } from "../shared/pages/PublicNotFoundPage";
 import { PrivateNotFoundPage } from "../shared/pages/PrivateNotFoundPage";
 import { ChartsPage } from "../features/charts/pages/ChartsPage";
+import { PublicHomePage } from "../shared/pages/PublicHomePage";
 
 export const router = createBrowserRouter([
   {
     element: <PublicLayout />,
     children: [
+      { path: "/", element: <PublicHomePage /> },
       { path: "/login", element: <LoginPage /> },
       { path: "/register", element: <RegisterPage /> },
       { path: "/onboarding", element: <OnboardingPage /> },
@@ -39,7 +41,6 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { path: "/", element: <DashboardPage /> },
       { path: "/dashboard", element: <DashboardPage /> },
       { path: "/portfolios", element: <PortfoliosPage /> },
       { path: "/metrics", element: <MetricsPage /> },
