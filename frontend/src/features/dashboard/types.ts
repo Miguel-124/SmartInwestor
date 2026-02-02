@@ -11,10 +11,11 @@ export type DashboardSummaryDto = {
       quantity: number;
       price: number;
       value: number;
+      purchasedAt: string;
     }>;
   }>;
   history: Array<{
-    date: string; // ISO yyyy-mm-dd
+    date: string;
     totalValue: number;
   }>;
 };

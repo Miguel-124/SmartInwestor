@@ -60,7 +60,7 @@ export function AssetsLineChart({
         <ResponsiveContainer>
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="dateLabel" />
+            <XAxis dataKey="dateLabel" interval="preserveStartEnd" />
             <YAxis tickFormatter={(v) => `${Math.round(Number(v) / 1000)}k`} />
             <Tooltip
               formatter={(v: number | undefined) =>
@@ -68,8 +68,9 @@ export function AssetsLineChart({
               }
             />{" "}
             <Line
-              type="monotone"
+              type="stepAfter" // ew monotone (linia gładka)
               dataKey="totalValue"
+              name="Wartość"
               strokeWidth={3}
               dot={false}
             />
