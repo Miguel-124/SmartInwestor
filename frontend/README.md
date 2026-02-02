@@ -19,6 +19,7 @@ npm install
 
 ### Running the Application
 
+## Getting Started (dev)
 ```bash
 npm start
 ```
