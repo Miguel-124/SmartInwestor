@@ -1,8 +1,4 @@
 export type DashboardSummaryDto = {
-  user: {
-    firstName: string;
-    lastName: string;
-  };
   currency: "PLN" | "USD" | "EUR" | string;
   portfolios: Array<{
     id: string;
@@ -18,13 +14,12 @@ export type DashboardSummaryDto = {
     }>;
   }>;
   history: Array<{
-    date: string;
+    date: string; // ISO yyyy-mm-dd
     totalValue: number;
   }>;
 };
 
 export type DashboardModel = {
-  userFullName: string;
   currency: string;
   totalValue: number;
   portfolios: Array<{

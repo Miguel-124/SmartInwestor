@@ -1,7 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { screen } from "@testing-library/react";
 import { renderWithProviders } from "../../../test/renderWithProviders";
 import { DashboardPage } from "../pages/DashboardPage";
+
+beforeEach(() => {
+  localStorage.setItem("smartinwestor_token", "test-token");
+});
 
 describe("DashboardPage", () => {
   it("renders greeting and charts/table", async () => {

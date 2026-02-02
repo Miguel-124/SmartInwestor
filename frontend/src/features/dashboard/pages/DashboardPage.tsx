@@ -3,6 +3,7 @@ import { useDashboardSummaryQuery } from "../api/hooks";
 import { PortfolioPieChart } from "../components/PortfolioPieChart";
 import { PortfolioAssetsTable } from "../components/PortfolioAssetsTable";
 import { AssetsLineChart } from "../components/AssetsLineChart";
+import { useMeQuery } from "../../auth/api/useMeQuery";
 
 function formatMoney(value: number, currency: string) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency }).format(
@@ -11,7 +12,11 @@ function formatMoney(value: number, currency: string) {
 }
 
 export function DashboardPage() {
-  const { data, isLoading, isError, error } = useDashboardSummaryQuery();
+  const meQuery = useMeQuery();
+  const summaryQuery = useDashboardSummaryQuery();
+
+  const isLoading = meQuery.isLoading || summaryQuery.isLoading;
+  const isError = meQuery.isError || summaryQuery.isError;
 
   if (isLoading) {
     return (
@@ -28,14 +33,22 @@ export function DashboardPage() {
   }
 
   if (isError) {
+    const msg =
+      (meQuery.error as Error | undefined)?.message ||
+      (summaryQuery.error as Error | undefined)?.message ||
+      "Nie udało się pobrać danych dashboardu.";
+
     return (
       <Alert severity="error" aria-label="Dashboard error">
-        {(error as Error).message || "Nie udało się pobrać danych dashboardu."}
+        {msg}
       </Alert>
     );
   }
 
-  if (!data || data.portfolios.length === 0) {
+  const me = meQuery.data!;
+  const data = summaryQuery.data!;
+
+  if (data.portfolios.length === 0) {
     return (
       <Stack spacing={1} sx={{ py: 4 }} aria-label="Dashboard empty">
         <Typography variant="h4" sx={{ fontWeight: 900 }}>
@@ -56,10 +69,9 @@ export function DashboardPage() {
 
   return (
     <Stack spacing={3} aria-label="Dashboard page">
-      {/* Header */}
       <Box>
         <Typography variant="h4" sx={{ fontWeight: 950 }}>
-          Witaj, {data.userFullName} 👋
+          Witaj, {me.firstName} 👋
         </Typography>
         <Typography color="text.secondary">
           Łączna wartość aktywów:{" "}
@@ -67,7 +79,6 @@ export function DashboardPage() {
         </Typography>
       </Box>
 
-      {/* Charts */}
       <Box
         sx={{
           display: "grid",
@@ -80,7 +91,6 @@ export function DashboardPage() {
         <AssetsLineChart history={data.history} currency={data.currency} />
       </Box>
 
-      {/* Table */}
       <PortfolioAssetsTable
         portfolios={data.portfolios}
         currency={data.currency}

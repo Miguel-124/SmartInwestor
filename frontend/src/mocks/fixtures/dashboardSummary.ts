@@ -1,8 +1,4 @@
 export const dashboardSummaryFixture = {
-  user: {
-    firstName: "Jan",
-    lastName: "Kowalski",
-  },
   currency: "PLN",
   portfolios: [
     {
