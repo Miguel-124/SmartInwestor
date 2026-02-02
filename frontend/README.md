@@ -1,18 +1,85 @@
-# SmartInvestor — Frontend (Expo Web · React Native · TypeScript)
+# SmartInwestor Frontend
 
-A modern interface for individual investors: clear portfolio overview, indicator visualizations, and allocation hints. This MVP runs **in the browser** via Expo Web and is ready for demo/defense.
+## Overview
 
+Frontend application for SmartInwestor investment platform.
 
-## Tech Stack
-- **React Native + TypeScript** (rendered on web via `react-native-web`)
-- **Expo** (dev server & bundler)
-- **React Navigation** (routing)
-- **Recharts** (charts)
-- **AsyncStorage** (IndexedDB on web) for simple local auth/session
+## Getting Started
 
+### Prerequisites
+
+- Node.js (v14+)
+- npm or yarn
+
+### Installation
+
+```bash
+npm install
+```
+
+### Running the Application
 
 ## Getting Started (dev)
 ```bash
-cd frontend
-npm i
-npm run dev   # alias for: expo start --web
+npm start
+```
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── RequireAuth.tsx
+│   ├── providers.tsx
+│   ├── routes.tsx
+│   └── theme/
+│       ├── createAppTheme.ts
+│       ├── ThemeModeProvider.tsx
+│       └── tokens.ts
+├── assets/ (empty or contains images)
+├── features/
+│   ├── analysis/
+│   ├── auth/
+│   ├── dashboard/
+│   ├── metrics/
+│   ├── onboarding/
+│   ├── portfolios/
+│   └── profile/
+├── layouts/
+│   ├── PrivateLayout.tsx
+│   └── PublicLayout.tsx
+├── mocks/
+│   ├── browser.ts
+│   ├── server.ts
+│   ├── fixtures/
+│   └── handlers/
+├── shared/
+│   ├── UI/
+│   │   ├── AppFooter.tsx
+│   │   ├── AppHeader.tsx
+│   │   └── Logo.tsx
+│   ├── api/
+│   │   └── httpClient.ts
+│   └── auth/
+│       └── tokenStorage.ts
+├── test/
+│   ├── renderWithProviders.tsx
+│   └── setup.ts
+├── App.tsx
+├── index.css
+└── main.tsx
+```
+
+## Technologies
+
+- React
+- TypeScript
+- CSS/SCSS
+
+## Contributing
+
+See CONTRIBUTING.md for guidelines.
+
+## License
+
+MIT
