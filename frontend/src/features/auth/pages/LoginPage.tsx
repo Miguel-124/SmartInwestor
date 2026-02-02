@@ -17,6 +17,7 @@ import React from "react";
 import { useLoginMutation } from "../api/hooks";
 import { setAuthToken } from "../../../shared/auth/tokenStorage";
 import { AuthShell } from "../components/AuthShell";
+import { useQueryClient } from "@tanstack/react-query";
 
 const schema = z.object({
   email: z
@@ -33,6 +34,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const loginMutation = useLoginMutation();
   const [showPassword, setShowPassword] = React.useState(false);
+  const queryClient = useQueryClient();
 
   const {
     register,
@@ -47,6 +49,12 @@ export function LoginPage() {
   const onSubmit = handleSubmit(async (values) => {
     const data = await loginMutation.mutateAsync(values);
     setAuthToken(data.token);
+
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["me"] }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] }),
+    ]);
+
     navigate("/dashboard");
   });
 

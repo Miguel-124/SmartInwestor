@@ -14,6 +14,8 @@ import LightModeIcon from "@mui/icons-material/LightMode";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import { Logo } from "../../../shared/UI/Logo";
 import { useThemeMode } from "../../../app/theme/ThemeModeProvider";
+import Link from "@mui/material/Link";
+import { Link as RouterLink } from "react-router-dom";
 
 type AuthShellProps = {
   title: string;
@@ -190,7 +192,15 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
           <Divider sx={{ my: 2.5 }} />
 
           <Typography variant="caption" sx={{ color: "text.secondary" }}>
-            Logując się akceptujesz regulamin i politykę prywatności.
+            Logując się akceptujesz{" "}
+            <Link component={RouterLink} to="/terms" underline="hover">
+              regulamin
+            </Link>{" "}
+            i{" "}
+            <Link component={RouterLink} to="/privacy-policy" underline="hover">
+              politykę prywatności
+            </Link>
+            .
           </Typography>
         </Paper>
       </Box>

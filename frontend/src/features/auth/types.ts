@@ -22,3 +22,19 @@ export type RegisterRequestDto = {
 export type RegisterResponseDto = {
   ok: boolean;
 };
+
+export type MeResponseDto = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  createdAt: string; // ISO
+};
+
+export type MeModel = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  createdAt: Date;
+};
