@@ -21,6 +21,12 @@ export type RegisterRequestDto = {
 
 export type RegisterResponseDto = {
   ok: boolean;
+  token: string;
+  user: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
 };
 
 export type MeResponseDto = {

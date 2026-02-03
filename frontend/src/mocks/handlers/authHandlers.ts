@@ -1,4 +1,5 @@
 import { http, HttpResponse } from "msw";
+import { setUserFromRegister } from "../db/usersDb";
 
 type LoginBody = { email?: string; password?: string };
 type RegisterBody = {
@@ -12,13 +13,13 @@ export const authHandlers = [
   http.post("/api/auth/login", async ({ request }) => {
     const body = (await request.json().catch(() => ({}))) as LoginBody;
 
-    // prosta symulacja błędu
     if (!body.email || !body.password) {
       return HttpResponse.json(
         { message: "Brak danych logowania" },
         { status: 400 },
       );
     }
+
     if (body.password === "wrong-password") {
       return HttpResponse.json(
         { message: "Nieprawidłowy email lub hasło" },
@@ -42,7 +43,6 @@ export const authHandlers = [
       );
     }
 
-    // symulacja: email zajęty
     if (body.email.toLowerCase() === "taken@example.com") {
       return HttpResponse.json(
         { message: "Email jest już zajęty" },
@@ -50,6 +50,20 @@ export const authHandlers = [
       );
     }
 
-    return HttpResponse.json({ ok: true });
+    setUserFromRegister({
+      firstName: body.firstName,
+      lastName: body.lastName,
+      email: body.email,
+    });
+
+    return HttpResponse.json({
+      ok: true,
+      token: "mock-token-123",
+      user: {
+        firstName: body.firstName,
+        lastName: body.lastName,
+        email: body.email,
+      },
+    });
   }),
 ];

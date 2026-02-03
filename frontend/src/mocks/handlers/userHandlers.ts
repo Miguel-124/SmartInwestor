@@ -1,5 +1,5 @@
 import { http, HttpResponse } from "msw";
-import { meFixture } from "../fixtures/me";
+import { getUser, updateUser } from "../db/usersDb";
 
 export const userHandlers = [
   http.get("/api/users/me", async ({ request }) => {
@@ -10,6 +10,27 @@ export const userHandlers = [
       return HttpResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    return HttpResponse.json(meFixture);
+    return HttpResponse.json(getUser());
+  }),
+
+  http.put("/api/users/me", async ({ request }) => {
+    const auth =
+      request.headers.get("authorization") ??
+      request.headers.get("Authorization");
+    if (!auth?.startsWith("Bearer ")) {
+      return HttpResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = (await request.json()) as Partial<{
+      birthDate: string;
+      riskProfile: "conservative" | "balanced" | "aggressive";
+      acceptRisk: boolean;
+      firstName: string;
+      lastName: string;
+      email: string;
+    }>;
+
+    const updated = updateUser(body);
+    return HttpResponse.json(updated);
   }),
 ];

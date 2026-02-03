@@ -20,7 +20,7 @@ export function ChartsHeader({
   points: number;
   onRangeChange: (v: ChartsRange) => void;
   onPointsChange: (v: number) => void;
-  onRefresh: () => void;
+  // onRefresh: () => void;
 }) {
   return (
     <Paper sx={{ p: 3, borderRadius: 2, mb: 3 }}>

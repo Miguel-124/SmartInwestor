@@ -100,7 +100,7 @@ export function DashboardPage() {
         }}
       >
         <PortfolioPieChart items={pieItems} currency={data.currency} />
-        <Card sx={{ borderRadius: 4 }}>
+        <Card sx={{ borderRadius: 2 }}>
           <CardActionArea
             onClick={() => navigate("/charts")}
             aria-label="Otwórz szczegółowe wykresy"

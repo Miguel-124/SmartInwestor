@@ -1,5 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { listPortfolios } from "../db/portfoliosDb";
+import { getUser } from "../db/usersDb";
 
 function isIsoDateString(v: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -174,7 +175,7 @@ export const dashboardHandlers = [
   http.get("/api/dashboard/summary", async () => {
     const currency = "PLN";
 
-    const db = listPortfolios();
+    const db = listPortfolios(getUser().id);
 
     const portfolios = db.map((p) => {
       const assets = p.assets.map((a) => ({
@@ -186,7 +187,6 @@ export const dashboardHandlers = [
       return { id: p.id, name: p.name, totalValue, assets };
     });
 
-    // ✅ historia smart z aktywów
     const allAssets = portfolios.flatMap((p) =>
       p.assets.map((a) => ({ purchasedAt: a.purchasedAt, value: a.value })),
     );

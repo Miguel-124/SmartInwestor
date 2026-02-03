@@ -8,9 +8,9 @@ import { PortfolioCharts } from "../components/PortfolioCharts";
 
 export function ChartsPage() {
   const [range, setRange] = React.useState<ChartsRange>("12m");
-  const [points, setPoints] = React.useState<number>(20);
+  const [points, setPoints] = React.useState<number>(15);
 
-  const { data, isLoading, isError, refetch } = useChartsOverviewQuery(
+  const { data, isLoading, isError /*refetch*/ } = useChartsOverviewQuery(
     range,
     points,
   );
@@ -22,7 +22,7 @@ export function ChartsPage() {
         points={points}
         onRangeChange={setRange}
         onPointsChange={setPoints}
-        onRefresh={() => refetch()}
+        // onRefresh={() => refetch()}
       />
 
       {isLoading && (

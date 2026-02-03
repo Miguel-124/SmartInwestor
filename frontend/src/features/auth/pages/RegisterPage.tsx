@@ -17,6 +17,8 @@ import { z } from "zod";
 import { useNavigate } from "react-router-dom";
 import { useRegisterMutation } from "../api/hooks";
 import { AuthShell } from "../components/AuthShell";
+import { useQueryClient } from "@tanstack/react-query";
+import { setAuthToken } from "../../../shared/auth/tokenStorage";
 
 const passwordSchema = z
   .string()
@@ -52,6 +54,7 @@ type FormValues = z.infer<typeof schema>;
 export function RegisterPage() {
   const navigate = useNavigate();
   const registerMutation = useRegisterMutation();
+  const queryClient = useQueryClient();
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirm, setShowConfirm] = React.useState(false);
 
@@ -72,13 +75,21 @@ export function RegisterPage() {
   });
 
   const onSubmit = handleSubmit(async (values) => {
-    await registerMutation.mutateAsync({
+    const data = await registerMutation.mutateAsync({
       firstName: values.firstName,
       lastName: values.lastName,
       email: values.email,
       password: values.password,
     });
 
+    setAuthToken(data.token);
+
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["me"] }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] }),
+    ]);
+
+    sessionStorage.setItem("onboardingAllowed", "1");
     navigate("/onboarding");
   });
 
