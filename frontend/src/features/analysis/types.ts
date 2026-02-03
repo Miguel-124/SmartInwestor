@@ -1,4 +1,4 @@
-import type { RiskProfile } from "../../profile/types";
+import type { RiskProfile } from "../profile/types";
 
 export type AnalysisRequestDto = {
   riskProfile: RiskProfile;
