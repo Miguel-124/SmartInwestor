@@ -46,9 +46,6 @@ export function AppPrivateHeader() {
           <NavLink to="/analysis" style={linkStyle}>
             Analiza
           </NavLink>
-          <NavLink to="/charts" style={linkStyle}>
-            Wykresy
-          </NavLink>
           <NavLink to="/profile/settings" style={linkStyle}>
             Profil
           </NavLink>

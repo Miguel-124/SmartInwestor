@@ -187,7 +187,6 @@ export const dashboardHandlers = [
       return { id: p.id, name: p.name, totalValue, assets };
     });
 
-    // ✅ historia smart z aktywów
     const allAssets = portfolios.flatMap((p) =>
       p.assets.map((a) => ({ purchasedAt: a.purchasedAt, value: a.value })),
     );
