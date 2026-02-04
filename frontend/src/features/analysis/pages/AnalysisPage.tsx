@@ -22,11 +22,13 @@ import { usePortfoliosQuery } from "../../portfolios/api/hooks";
 import { useAnalysisQuery } from "../api/hooks";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { Link as RouterLink } from "react-router-dom";
+import { useFxRates, convertToBase } from "../../../shared/api/fxRates";
+import type { CurrencyCode } from "../../../shared/types/currency";
 
-function formatMoney(value: number) {
+function formatMoney(value: number, currency: string) {
   return new Intl.NumberFormat("pl-PL", {
     style: "currency",
-    currency: "PLN",
+    currency,
   }).format(value);
 }
 
@@ -52,23 +54,52 @@ export function AnalysisPage() {
   const profileQuery = useProfileQuery();
   const portfoliosQuery = usePortfoliosQuery();
 
+  const baseCurrency =
+    (profileQuery.data?.baseCurrency as CurrencyCode | undefined) ?? "USD";
+  const fxQuery = useFxRates(baseCurrency);
+
   const params = React.useMemo(() => {
     if (!profileQuery.data || !portfoliosQuery.data) return null;
+
+    const toBase = (amount: number, from: CurrencyCode) =>
+      convertToBase(amount, from, baseCurrency, fxQuery.data);
+
+    const portfoliosBase = portfoliosQuery.data.map((p) => {
+      const assets = p.assets.map((a) => ({
+        symbol: a.symbol,
+        name: a.name,
+        value: toBase(a.value, a.currency),
+      }));
+
+      const totalValue = assets.reduce((acc, a) => acc + a.value, 0);
+
+      return {
+        id: p.id,
+        name: p.name,
+        totalValue,
+        assets,
+      };
+    });
+
     return {
       riskProfile: profileQuery.data.riskProfile ?? "balanced",
-      portfolios: portfoliosQuery.data,
+      portfolios: portfoliosBase,
     };
-  }, [profileQuery.data, portfoliosQuery.data]);
+  }, [profileQuery.data, portfoliosQuery.data, baseCurrency, fxQuery.data]);
 
   const analysisQuery = useAnalysisQuery(params);
 
   const isLoading =
     profileQuery.isLoading ||
     portfoliosQuery.isLoading ||
-    analysisQuery.isLoading;
+    analysisQuery.isLoading ||
+    fxQuery.isLoading;
 
   const isError =
-    profileQuery.isError || portfoliosQuery.isError || analysisQuery.isError;
+    profileQuery.isError ||
+    portfoliosQuery.isError ||
+    analysisQuery.isError ||
+    fxQuery.isError;
 
   if (isLoading) {
     return (
@@ -84,6 +115,7 @@ export function AnalysisPage() {
       (profileQuery.error as Error | undefined)?.message ||
       (portfoliosQuery.error as Error | undefined)?.message ||
       (analysisQuery.error as Error | undefined)?.message ||
+      (fxQuery.error as Error | undefined)?.message ||
       "Nie udało się pobrać analizy.";
     return <Alert severity="error">{msg}</Alert>;
   }
@@ -159,7 +191,7 @@ export function AnalysisPage() {
           <CardContent>
             <Typography color="text.secondary">Wartość portfela</Typography>
             <Typography variant="h6" sx={{ fontWeight: 800 }}>
-              {formatMoney(data.totalValue)}
+              {formatMoney(data.totalValue, baseCurrency)}
             </Typography>
           </CardContent>
         </Card>

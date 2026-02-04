@@ -16,6 +16,9 @@ import { AssetsLineChart } from "../components/AssetsLineChart";
 import { useMeQuery } from "../../auth/api/useMeQuery";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import { useProfileQuery } from "../../profile/api/hooks";
+import { useFxRates, convertToBase } from "../../../shared/api/fxRates";
+import type { CurrencyCode } from "../../../shared/types/currency";
 
 import { CardActionArea } from "@mui/material";
 
@@ -27,10 +30,23 @@ function formatMoney(value: number, currency: string) {
 
 export function DashboardPage() {
   const meQuery = useMeQuery();
+  const profileQuery = useProfileQuery();
   const summaryQuery = useDashboardSummaryQuery();
 
-  const isLoading = meQuery.isLoading || summaryQuery.isLoading;
-  const isError = meQuery.isError || summaryQuery.isError;
+  const baseCurrency =
+    (profileQuery.data?.baseCurrency as CurrencyCode | undefined) ?? "USD";
+  const fxQuery = useFxRates(baseCurrency);
+
+  const isLoading =
+    meQuery.isLoading ||
+    summaryQuery.isLoading ||
+    profileQuery.isLoading ||
+    fxQuery.isLoading;
+  const isError =
+    meQuery.isError ||
+    summaryQuery.isError ||
+    profileQuery.isError ||
+    fxQuery.isError;
 
   const navigate = useNavigate();
 
@@ -52,6 +68,7 @@ export function DashboardPage() {
     const msg =
       (meQuery.error as Error | undefined)?.message ||
       (summaryQuery.error as Error | undefined)?.message ||
+      (fxQuery.error as Error | undefined)?.message ||
       "Nie udało się pobrać danych dashboardu.";
 
     return (
@@ -63,6 +80,25 @@ export function DashboardPage() {
 
   const me = meQuery.data!;
   const data = summaryQuery.data!;
+  const summaryCurrency = (data.currency as CurrencyCode) ?? "PLN";
+
+  const toBase = (amount: number) =>
+    convertToBase(amount, summaryCurrency, baseCurrency, fxQuery.data);
+
+  const displayTotalValue = toBase(data.totalValue);
+  const displayPortfolios = data.portfolios.map((p) => ({
+    ...p,
+    totalValue: toBase(p.totalValue),
+    assets: p.assets.map((a) => ({
+      ...a,
+      price: toBase(a.price),
+      value: toBase(a.value),
+    })),
+  }));
+  const displayHistory = data.history.map((h) => ({
+    ...h,
+    totalValue: toBase(h.totalValue),
+  }));
 
   if (data.portfolios.length === 0) {
     return (
@@ -78,7 +114,7 @@ export function DashboardPage() {
     );
   }
 
-  const pieItems = data.portfolios.map((p) => ({
+  const pieItems = displayPortfolios.map((p) => ({
     name: p.name,
     value: p.totalValue,
   }));
@@ -104,7 +140,7 @@ export function DashboardPage() {
           </Stack>
           <Typography color="text.secondary">
             Łączna wartość aktywów:{" "}
-            <strong>{formatMoney(data.totalValue, data.currency)}</strong>
+            <strong>{formatMoney(displayTotalValue, baseCurrency)}</strong>
           </Typography>
         </Box>
 
@@ -127,20 +163,20 @@ export function DashboardPage() {
           alignItems: "stretch",
         }}
       >
-        <PortfolioPieChart items={pieItems} currency={data.currency} />
+        <PortfolioPieChart items={pieItems} currency={baseCurrency} />
         <Card sx={{ borderRadius: 2 }}>
           <CardActionArea
             onClick={() => navigate("/charts")}
             aria-label="Otwórz szczegółowe wykresy"
           >
-            <AssetsLineChart history={data.history} currency={data.currency} />
+            <AssetsLineChart history={displayHistory} currency={baseCurrency} />
           </CardActionArea>
         </Card>
       </Box>
 
       <PortfolioAssetsTable
-        portfolios={data.portfolios}
-        currency={data.currency}
+        portfolios={displayPortfolios}
+        currency={baseCurrency}
       />
     </Stack>
   );

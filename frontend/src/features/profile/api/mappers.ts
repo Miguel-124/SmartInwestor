@@ -14,5 +14,6 @@ export function mapProfile(dto: ProfileResponseDto): ProfileModel {
     birthDate: normalizeOptional(dto.birthDate),
     riskProfile: normalizeOptional(dto.riskProfile),
     acceptRisk: normalizeOptional(dto.acceptRisk),
+    baseCurrency: normalizeOptional(dto.baseCurrency),
   };
 }

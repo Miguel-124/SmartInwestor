@@ -5,6 +5,9 @@ import { useChartsOverviewQuery } from "../api/hooks";
 import { ChartsHeader } from "../components/ChartsHeader";
 import { TotalValueChartCard } from "../components/TotalValueChartCard";
 import { PortfolioCharts } from "../components/PortfolioCharts";
+import { useProfileQuery } from "../../profile/api/hooks";
+import { useFxRates, convertToBase } from "../../../shared/api/fxRates";
+import type { CurrencyCode } from "../../../shared/types/currency";
 
 export function ChartsPage() {
   const [range, setRange] = React.useState<ChartsRange>("12m");
@@ -14,6 +17,13 @@ export function ChartsPage() {
     range,
     points,
   );
+  const profileQuery = useProfileQuery();
+  const baseCurrency =
+    (profileQuery.data?.baseCurrency as CurrencyCode | undefined) ?? "USD";
+  const fxQuery = useFxRates(baseCurrency);
+
+  const isFxLoading = fxQuery.isLoading || profileQuery.isLoading;
+  const isFxError = fxQuery.isError || profileQuery.isError;
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -25,13 +35,13 @@ export function ChartsPage() {
         // onRefresh={() => refetch()}
       />
 
-      {isLoading && (
+      {(isLoading || isFxLoading) && (
         <Paper sx={{ p: 4, borderRadius: 2, textAlign: "center" }}>
           <Typography variant="h6">Ładowanie wykresów…</Typography>
         </Paper>
       )}
 
-      {isError && (
+      {(isError || isFxError) && (
         <Paper sx={{ p: 4, borderRadius: 2 }}>
           <Typography variant="h6">Nie udało się pobrać wykresów.</Typography>
           <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
@@ -40,19 +50,49 @@ export function ChartsPage() {
         </Paper>
       )}
 
-      {data && (
+      {data && !isFxLoading && !isFxError && (
         <Box sx={{ mt: 3 }}>
-          <TotalValueChartCard
-            currency={data.currency}
-            history={data.total.history}
-            portfolios={data.portfolios}
-          />
-          <Box sx={{ mt: 4 }}>
-            <PortfolioCharts
-              currency={data.currency}
-              series={data.portfolios}
-            />
-          </Box>
+          {(() => {
+            const summaryCurrency = (data.currency as CurrencyCode) ?? "PLN";
+            const toBase = (amount: number) =>
+              convertToBase(
+                amount,
+                summaryCurrency,
+                baseCurrency,
+                fxQuery.data,
+              );
+
+            const convertedTotal = {
+              history: data.total.history.map((p) => ({
+                ...p,
+                totalValue: toBase(p.totalValue),
+              })),
+            };
+
+            const convertedPortfolios = data.portfolios.map((p) => ({
+              ...p,
+              history: p.history.map((h) => ({
+                ...h,
+                totalValue: toBase(h.totalValue),
+              })),
+            }));
+
+            return (
+              <>
+                <TotalValueChartCard
+                  currency={baseCurrency}
+                  history={convertedTotal.history}
+                  portfolios={convertedPortfolios}
+                />
+                <Box sx={{ mt: 4 }}>
+                  <PortfolioCharts
+                    currency={baseCurrency}
+                    series={convertedPortfolios}
+                  />
+                </Box>
+              </>
+            );
+          })()}
         </Box>
       )}
     </Container>

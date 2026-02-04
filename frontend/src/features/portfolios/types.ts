@@ -1,3 +1,5 @@
+import type { CurrencyCode } from "../../shared/types/currency";
+
 export type AssetDto = {
   id: string;
   symbol: string;
@@ -5,6 +7,7 @@ export type AssetDto = {
   quantity: number;
   price: number;
   purchasedAt: string;
+  currency: CurrencyCode;
 };
 
 export type PortfolioDto = {
@@ -26,6 +29,7 @@ export type CreateAssetRequestDto = {
   quantity: number;
   price: number;
   purchasedAt: string;
+  currency: CurrencyCode;
 };
 
 export type UpdateAssetRequestDto = Partial<CreateAssetRequestDto>;

@@ -9,6 +9,7 @@ export type UserProfile = {
   birthDate?: string;
   riskProfile?: "conservative" | "balanced" | "aggressive";
   acceptRisk?: boolean;
+  baseCurrency?: "PLN" | "EUR" | "USD";
 };
 
 let currentUser: UserProfile = { ...meFixture };

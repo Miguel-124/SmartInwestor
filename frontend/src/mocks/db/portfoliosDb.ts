@@ -7,6 +7,7 @@ export type DbAsset = {
   quantity: number;
   price: number;
   purchasedAt: string;
+  currency: "PLN" | "EUR" | "USD";
 };
 
 export type DbPortfolio = {
@@ -34,6 +35,7 @@ const portfoliosByUser: Record<string, DbPortfolio[]> = {
           quantity: 10,
           price: 780,
           purchasedAt: "2024-01-09",
+          currency: "PLN",
         },
         {
           id: "a2",
@@ -42,6 +44,7 @@ const portfoliosByUser: Record<string, DbPortfolio[]> = {
           quantity: 20,
           price: 1245,
           purchasedAt: "2024-02-15",
+          currency: "PLN",
         },
       ],
     },
@@ -57,6 +60,7 @@ const portfoliosByUser: Record<string, DbPortfolio[]> = {
           quantity: 4,
           price: 1700,
           purchasedAt: "2024-03-20",
+          currency: "PLN",
         },
         {
           id: "a4",
@@ -65,6 +69,7 @@ const portfoliosByUser: Record<string, DbPortfolio[]> = {
           quantity: 0.05,
           price: 68000,
           purchasedAt: "2024-04-10",
+          currency: "PLN",
         },
       ],
     },

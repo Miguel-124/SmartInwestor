@@ -9,6 +9,7 @@ import {
   updateAsset,
   updatePortfolio,
 } from "../db/portfoliosDb";
+import { currencyCodes } from "../../shared/types/currency";
 
 type CreatePortfolioBody = { name?: string };
 type UpdatePortfolioBody = { name?: string };
@@ -19,6 +20,7 @@ type CreateAssetBody = {
   quantity?: number;
   price?: number;
   purchasedAt?: string;
+  currency?: "PLN" | "EUR" | "USD";
 };
 
 type UpdateAssetBody = Partial<CreateAssetBody>;
@@ -109,6 +111,7 @@ export const portfoliosHandlers = [
     const quantity = Number(body.quantity);
     const price = Number(body.price);
     const purchasedAt = body.purchasedAt?.trim();
+    const currency = body.currency ?? "PLN";
 
     if (!purchasedAt || !/^\d{4}-\d{2}-\d{2}$/.test(purchasedAt)) {
       return HttpResponse.json(
@@ -134,6 +137,12 @@ export const portfoliosHandlers = [
         { status: 400 },
       );
     }
+    if (!currencyCodes.includes(currency)) {
+      return HttpResponse.json(
+        { message: "Nieprawidłowa waluta" },
+        { status: 400 },
+      );
+    }
 
     const a = addAsset(getUser().id, portfolioId, {
       symbol,
@@ -141,6 +150,7 @@ export const portfoliosHandlers = [
       quantity,
       price,
       purchasedAt,
+      currency,
     });
     if (!a) return HttpResponse.json({ message: "Not found" }, { status: 404 });
 
@@ -164,6 +174,7 @@ export const portfoliosHandlers = [
       if (typeof body.quantity !== "undefined")
         patch.quantity = Number(body.quantity);
       if (typeof body.price !== "undefined") patch.price = Number(body.price);
+      if (typeof body.currency === "string") patch.currency = body.currency;
       if (typeof body.purchasedAt === "string")
         patch.purchasedAt = body.purchasedAt.trim();
 
@@ -174,6 +185,8 @@ export const portfoliosHandlers = [
         typeof patch.quantity === "number" ? patch.quantity : undefined;
       const nextPrice =
         typeof patch.price === "number" ? patch.price : undefined;
+      const nextCurrency =
+        typeof patch.currency === "string" ? patch.currency : undefined;
       const nextPurchasedAt =
         typeof patch.purchasedAt === "string" ? patch.purchasedAt : undefined;
 
@@ -213,6 +226,12 @@ export const portfoliosHandlers = [
       ) {
         return HttpResponse.json(
           { message: "Data zakupu jest wymagana (YYYY-MM-DD)" },
+          { status: 400 },
+        );
+      }
+      if (nextCurrency !== undefined && !currencyCodes.includes(nextCurrency)) {
+        return HttpResponse.json(
+          { message: "Nieprawidłowa waluta" },
           { status: 400 },
         );
       }

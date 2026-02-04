@@ -10,6 +10,7 @@ import {
   FormHelperText,
   FormLabel,
   IconButton,
+  MenuItem,
   Paper,
   Radio,
   RadioGroup,
@@ -23,13 +24,19 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { useProfileQuery, useUpdateProfileMutation } from "../api/hooks";
+import {
+  useChangePasswordMutation,
+  useProfileQuery,
+  useUpdateProfileMutation,
+} from "../api/hooks";
 import { mapProfile } from "../api/mappers";
 import type { UpdateProfileRequestDto, RiskProfile } from "../types";
+import { currencyCodes } from "../../../shared/types/currency";
 import type { MeModel } from "../../auth/types";
 import { ProfileShell } from "../components/ProfileShell";
 
 const riskValues = ["conservative", "balanced", "aggressive"] as const;
+const baseCurrencyValues = currencyCodes;
 
 const riskOptions: Array<{
   value: RiskProfile;
@@ -81,19 +88,36 @@ const schema = z.object({
     .string()
     .min(1, "Data urodzenia jest wymagana")
     .refine(isAdult, "Musisz mieć ukończone 18 lat"),
+  baseCurrency: z.enum(baseCurrencyValues, {
+    message: "Wybierz walutę bazową",
+  }),
   riskProfile: z.enum(riskValues, {
     message: "Wybierz profil ryzyka",
   }),
   acceptRisk: z.boolean(),
 });
 
+const passwordSchema = z
+  .object({
+    currentPassword: z.string().min(6, "Podaj obecne hasło (min. 6 znaków)"),
+    newPassword: z.string().min(8, "Nowe hasło musi mieć co najmniej 8 znaków"),
+    confirmPassword: z.string().min(1, "Potwierdź nowe hasło"),
+  })
+  .refine((values) => values.newPassword === values.confirmPassword, {
+    message: "Hasła muszą być identyczne",
+    path: ["confirmPassword"],
+  });
+
 type FormValues = z.infer<typeof schema>;
+type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 export function ProfileSettingsPage() {
   const profileQuery = useProfileQuery();
   const updateMutation = useUpdateProfileMutation();
+  const changePasswordMutation = useChangePasswordMutation();
   const queryClient = useQueryClient();
   const [saved, setSaved] = React.useState(false);
+  const [passwordSaved, setPasswordSaved] = React.useState(false);
   const [initialRisk, setInitialRisk] = React.useState<RiskProfile | null>(
     null,
   );
@@ -114,8 +138,24 @@ export function ProfileSettingsPage() {
       lastName: "",
       email: "",
       birthDate: "",
+      baseCurrency: "USD",
       riskProfile: "balanced",
       acceptRisk: false,
+    },
+  });
+
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    reset: resetPassword,
+    formState: { errors: passwordErrors },
+  } = useForm<PasswordFormValues>({
+    resolver: zodResolver(passwordSchema),
+    mode: "onBlur",
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
     },
   });
 
@@ -136,6 +176,7 @@ export function ProfileSettingsPage() {
       lastName: profileQuery.data.lastName,
       email: profileQuery.data.email,
       birthDate: profileQuery.data.birthDate ?? "",
+      baseCurrency: profileQuery.data.baseCurrency ?? "USD",
       riskProfile: profileQuery.data.riskProfile ?? "balanced",
       acceptRisk: profileQuery.data.acceptRisk ?? false,
     });
@@ -167,6 +208,7 @@ export function ProfileSettingsPage() {
       lastName: values.lastName,
       email: values.email,
       birthDate: values.birthDate,
+      baseCurrency: values.baseCurrency,
       riskProfile: values.riskProfile,
       acceptRisk: values.acceptRisk,
     };
@@ -192,11 +234,22 @@ export function ProfileSettingsPage() {
       lastName: updated.lastName,
       email: updated.email,
       birthDate: updated.birthDate ?? "",
+      baseCurrency: updated.baseCurrency ?? "USD",
       riskProfile: updated.riskProfile ?? "balanced",
       acceptRisk: updated.acceptRisk ?? false,
     });
 
     setSaved(true);
+  });
+
+  const onPasswordSubmit = handlePasswordSubmit(async (values) => {
+    setPasswordSaved(false);
+    await changePasswordMutation.mutateAsync({
+      currentPassword: values.currentPassword,
+      newPassword: values.newPassword,
+    });
+    resetPassword();
+    setPasswordSaved(true);
   });
 
   if (profileQuery.isLoading) {
@@ -317,6 +370,28 @@ export function ProfileSettingsPage() {
                   {...register("birthDate")}
                 />
 
+                <Controller
+                  name="baseCurrency"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      select
+                      label="Waluta bazowa"
+                      error={!!errors.baseCurrency}
+                      helperText={errors.baseCurrency?.message}
+                      inputProps={{ "aria-label": "Waluta bazowa" }}
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value)}
+                    >
+                      {baseCurrencyValues.map((code) => (
+                        <MenuItem key={code} value={code}>
+                          {code}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
+
                 <FormControl error={!!errors.riskProfile}>
                   <FormLabel sx={{ pb: 1 }}>Profil ryzyka</FormLabel>
                   <Controller
@@ -392,6 +467,76 @@ export function ProfileSettingsPage() {
                     </Stack>
                   ) : (
                     "Zapisz zmiany"
+                  )}
+                </Button>
+              </Stack>
+            </form>
+          </Stack>
+        </Paper>
+
+        <Paper sx={{ p: 3, borderRadius: 2 }}>
+          <Stack spacing={2}>
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              Zmiana hasła
+            </Typography>
+
+            {changePasswordMutation.isError && (
+              <Alert severity="error" aria-label="Password update error">
+                {(changePasswordMutation.error as Error).message ||
+                  "Nie udało się zmienić hasła."}
+              </Alert>
+            )}
+
+            {passwordSaved && (
+              <Alert severity="success" aria-label="Password update success">
+                Hasło zostało zmienione.
+              </Alert>
+            )}
+
+            <form onSubmit={onPasswordSubmit} noValidate>
+              <Stack spacing={2}>
+                <TextField
+                  label="Obecne hasło"
+                  type="password"
+                  autoComplete="current-password"
+                  error={!!passwordErrors.currentPassword}
+                  helperText={passwordErrors.currentPassword?.message}
+                  inputProps={{ "aria-label": "Obecne hasło" }}
+                  {...registerPassword("currentPassword")}
+                />
+                <TextField
+                  label="Nowe hasło"
+                  type="password"
+                  autoComplete="new-password"
+                  error={!!passwordErrors.newPassword}
+                  helperText={passwordErrors.newPassword?.message}
+                  inputProps={{ "aria-label": "Nowe hasło" }}
+                  {...registerPassword("newPassword")}
+                />
+                <TextField
+                  label="Potwierdź nowe hasło"
+                  type="password"
+                  autoComplete="new-password"
+                  error={!!passwordErrors.confirmPassword}
+                  helperText={passwordErrors.confirmPassword?.message}
+                  inputProps={{ "aria-label": "Potwierdź nowe hasło" }}
+                  {...registerPassword("confirmPassword")}
+                />
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={changePasswordMutation.isPending}
+                  aria-label="Zmień hasło"
+                  size="large"
+                  sx={{ py: 1.2, fontWeight: 800 }}
+                >
+                  {changePasswordMutation.isPending ? (
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <CircularProgress size={18} />
+                      <span>Zapisywanie...</span>
+                    </Stack>
+                  ) : (
+                    "Zmień hasło"
                   )}
                 </Button>
               </Stack>

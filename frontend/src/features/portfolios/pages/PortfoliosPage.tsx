@@ -24,6 +24,9 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { Link as RouterLink } from "react-router-dom";
+import { useProfileQuery } from "../../profile/api/hooks";
+import { useFxRates, convertToBase } from "../../../shared/api/fxRates";
+import type { CurrencyCode } from "../../../shared/types/currency";
 
 import { PortfolioDialog } from "../components/PortfolioDialog";
 import { AssetDialog } from "../components/AssetDialog";
@@ -67,9 +70,8 @@ function formatPurchaseDate(iso: string) {
 }
 
 export function PortfoliosPage() {
-  const currency = "PLN";
-
   const portfoliosQuery = usePortfoliosQuery();
+  const profileQuery = useProfileQuery();
   const createPortfolio = useCreatePortfolioMutation();
   const updatePortfolio = useUpdatePortfolioMutation();
   const deletePortfolio = useDeletePortfolioMutation();
@@ -94,7 +96,16 @@ export function PortfoliosPage() {
     assetId: string;
   } | null>(null);
 
-  if (portfoliosQuery.isLoading) {
+  const baseCurrency =
+    (profileQuery.data?.baseCurrency as CurrencyCode | undefined) ?? "USD";
+  const fxQuery = useFxRates(baseCurrency);
+
+  const isLoading =
+    portfoliosQuery.isLoading || profileQuery.isLoading || fxQuery.isLoading;
+  const isError =
+    portfoliosQuery.isError || profileQuery.isError || fxQuery.isError;
+
+  if (isLoading) {
     return (
       <Stack
         spacing={2}
@@ -108,16 +119,33 @@ export function PortfoliosPage() {
     );
   }
 
-  if (portfoliosQuery.isError) {
+  if (isError) {
     return (
       <Alert severity="error" aria-label="Portfolios error">
         {(portfoliosQuery.error as Error).message ||
+          (fxQuery.error as Error | undefined)?.message ||
           "Nie udało się pobrać portfeli."}
       </Alert>
     );
   }
 
   const portfolios = portfoliosQuery.data ?? [];
+
+  const displayPortfolios = portfolios.map((p) => {
+    const assets = p.assets.map((a) => ({
+      ...a,
+      price: convertToBase(a.price, a.currency, baseCurrency, fxQuery.data),
+      value: convertToBase(a.value, a.currency, baseCurrency, fxQuery.data),
+    }));
+
+    const totalValue = assets.reduce((acc, a) => acc + a.value, 0);
+
+    return {
+      ...p,
+      totalValue,
+      assets,
+    };
+  });
 
   return (
     <Stack spacing={3} aria-label="Portfolios page">
@@ -181,7 +209,7 @@ export function PortfoliosPage() {
         </Paper>
       ) : (
         <Stack spacing={2}>
-          {portfolios.map((p) => (
+          {displayPortfolios.map((p) => (
             <Accordion
               key={p.id}
               defaultExpanded
@@ -201,8 +229,8 @@ export function PortfoliosPage() {
                   <Box sx={{ flex: 1 }}>
                     <Typography sx={{ fontWeight: 900 }}>{p.name}</Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Wartość: {formatMoney(p.totalValue, currency)} • Aktywów:{" "}
-                      {p.assets.length}
+                      Wartość: {formatMoney(p.totalValue, baseCurrency)} •
+                      Aktywów: {p.assets.length}
                     </Typography>
                   </Box>
 
@@ -261,6 +289,9 @@ export function PortfoliosPage() {
                         <TableCell sx={{ fontWeight: 800, width: 110 }}>
                           Symbol
                         </TableCell>
+                        <TableCell sx={{ fontWeight: 800, width: 90 }}>
+                          Waluta
+                        </TableCell>
                         <TableCell sx={{ fontWeight: 800, width: 120 }}>
                           Data zakupu
                         </TableCell>
@@ -274,13 +305,13 @@ export function PortfoliosPage() {
                           sx={{ fontWeight: 800, width: 140 }}
                           align="right"
                         >
-                          Cena
+                          Cena (bazowa)
                         </TableCell>
                         <TableCell
                           sx={{ fontWeight: 800, width: 160 }}
                           align="right"
                         >
-                          Wartość
+                          Wartość (bazowa)
                         </TableCell>
                         <TableCell
                           sx={{ fontWeight: 800, width: 120 }}
@@ -308,6 +339,7 @@ export function PortfoliosPage() {
                             <TableCell sx={{ fontWeight: 800 }}>
                               {a.symbol}
                             </TableCell>
+                            <TableCell>{a.currency}</TableCell>
                             <TableCell>
                               {formatPurchaseDate(a.purchasedAt)}
                             </TableCell>
@@ -315,10 +347,10 @@ export function PortfoliosPage() {
                               {formatQty(a.quantity)}
                             </TableCell>
                             <TableCell align="right">
-                              {formatMoney(a.price, currency)}
+                              {formatMoney(a.price, baseCurrency)}
                             </TableCell>
                             <TableCell align="right">
-                              {formatMoney(a.value, currency)}
+                              {formatMoney(a.value, baseCurrency)}
                             </TableCell>
                             <TableCell align="right">
                               <Stack
