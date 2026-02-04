@@ -31,10 +31,6 @@ function subtractMonthsUTC(d: Date, months: number) {
   return x;
 }
 
-/**
- * Generuje maks. `points` dat równomiernie rozłożonych między start a end (włącznie).
- * Punkty są "stałe" (jeśli brak zmian, wartości się nie zmieniają).
- */
 function buildEvenTimeline(start: Date, end: Date, points: number): string[] {
   const s = start.getTime();
   const e = end.getTime();
@@ -44,14 +40,12 @@ function buildEvenTimeline(start: Date, end: Date, points: number): string[] {
   for (let i = 0; i < points; i++) {
     const t = s + (i * (e - s)) / (points - 1);
     const d = new Date(t);
-    // zaokrąglenie do dnia UTC
     const day = new Date(
       Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
     );
     out.push(toIsoDate(day));
   }
 
-  // dedupe + sort
   return Array.from(new Set(out)).sort((a, b) => +toUtcDate(a) - +toUtcDate(b));
 }
 
@@ -94,7 +88,6 @@ export const chartsHandlers = [
     const todayIso = toIsoDate(new Date());
     const today = toUtcDate(todayIso);
 
-    // start = najwcześniejsza data zakupu (ignorujemy przyszłość)
     const minPurchaseIso =
       allAssets
         .map((a) => a.purchasedAt)
@@ -103,7 +96,6 @@ export const chartsHandlers = [
 
     let start = toUtcDate(minPurchaseIso);
 
-    // zakres: 6m / 12m / all (ale nie wcześniej niż pierwszy zakup)
     if (range === "6m") {
       const r = subtractMonthsUTC(today, 6);
       if (r > start) start = r;

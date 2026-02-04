@@ -59,7 +59,6 @@ export function TotalValueChartCard({
 
   const pointsCount = history.length;
 
-  // Merge historia wszystkich portfeli
   const chartData = history.map((point) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const row: Record<string, any> = {

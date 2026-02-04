@@ -19,7 +19,6 @@ export function PortfolioPieChart({
 }) {
   const theme = useTheme();
 
-  // prosta paleta oparta o theme (bez hardcodów “brandowych” w komponentach)
   const colors = [
     theme.palette.primary.main,
     theme.palette.secondary.main,

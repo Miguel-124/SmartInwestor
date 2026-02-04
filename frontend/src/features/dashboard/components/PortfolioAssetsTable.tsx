@@ -17,7 +17,6 @@ function formatMoney(value: number, currency: string) {
 }
 
 function formatQty(value: number) {
-  // żeby 0.05 wyglądało sensownie, a całe liczby nie miały .00
   return new Intl.NumberFormat("pl-PL", {
     maximumFractionDigits: 6,
   }).format(value);

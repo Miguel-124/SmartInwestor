@@ -65,7 +65,7 @@ function formatPurchaseDate(iso: string) {
 }
 
 export function PortfoliosPage() {
-  const currency = "PLN"; // na MVP stałe; później z profilu lub API
+  const currency = "PLN";
 
   const portfoliosQuery = usePortfoliosQuery();
   const createPortfolio = useCreatePortfolioMutation();
@@ -76,7 +76,6 @@ export function PortfoliosPage() {
   const updateAsset = useUpdateAssetMutation();
   const deleteAsset = useDeleteAssetMutation();
 
-  // UI state
   const [createOpen, setCreateOpen] = React.useState(false);
 
   const [editPortfolio, setEditPortfolio] =
@@ -167,7 +166,7 @@ export function PortfoliosPage() {
               key={p.id}
               defaultExpanded
               disableGutters
-              sx={{ borderRadius: 3, overflow: "hidden" }}
+              sx={{ borderRadius: 1, overflow: "hidden" }}
             >
               <AccordionSummary
                 expandIcon={<ExpandMoreIcon />}
@@ -231,7 +230,7 @@ export function PortfoliosPage() {
                       minWidth: 920,
                       tableLayout: "fixed",
                       "& th, & td": { whiteSpace: "nowrap" },
-                      "& td:first-of-type": { whiteSpace: "normal" }, // nazwa może się zawijać
+                      "& td:first-of-type": { whiteSpace: "normal" },
                     }}
                   >
                     <TableHead>

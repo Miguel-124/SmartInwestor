@@ -13,7 +13,6 @@ export type AnalysisRequestDto = {
     }>;
   }>;
 };
-
 export type AnalysisResponseDto = {
   generatedAt: string;
   riskProfile: RiskProfile;

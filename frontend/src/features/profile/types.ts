@@ -5,8 +5,8 @@ export type ProfileResponseDto = {
   firstName: string;
   lastName: string;
   email: string;
-  createdAt: string; // ISO
-  birthDate?: string | null; // ISO: YYYY-MM-DD
+  createdAt: string;
+  birthDate?: string | null;
   riskProfile?: RiskProfile | null;
   acceptRisk?: boolean | null;
 };

@@ -30,8 +30,6 @@ export function ThemeModeProvider({ children }: { children: React.ReactNode }) {
     return prefersDark ? "dark" : "light";
   });
 
-  // gdy user nie ma ustawienia i zmieni system — możesz to rozważyć,
-  // ale na MVP trzymamy prostą logikę: po ustawieniu ręcznie, zostaje.
   React.useEffect(() => {
     localStorage.setItem(STORAGE_KEY, mode);
   }, [mode]);

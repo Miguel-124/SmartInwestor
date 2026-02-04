@@ -29,7 +29,6 @@ export function AssetsLineChart({
   history: Array<{ date: Date; totalValue: number }>;
   currency: string;
 }) {
-  // Recharts lubi proste obiekty (string/number)
   const data = history.map((h) => ({
     dateLabel: formatMonth(h.date),
     totalValue: h.totalValue,
@@ -68,7 +67,7 @@ export function AssetsLineChart({
               }
             />{" "}
             <Line
-              type="stepAfter" // ew monotone (linia gładka)
+              type="stepAfter"
               dataKey="totalValue"
               name="Wartość"
               strokeWidth={3}

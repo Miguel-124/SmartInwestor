@@ -34,7 +34,7 @@ export type MeResponseDto = {
   firstName: string;
   lastName: string;
   email: string;
-  createdAt: string; // ISO
+  createdAt: string;
 };
 
 export type MeModel = {

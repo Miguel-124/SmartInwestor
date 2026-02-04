@@ -167,7 +167,6 @@ export const portfoliosHandlers = [
       if (typeof body.purchasedAt === "string")
         patch.purchasedAt = body.purchasedAt.trim();
 
-      // Walidacja po złożeniu patcha (jak w poprzedniej wersji)
       const nextSymbol =
         typeof patch.symbol === "string" ? patch.symbol : undefined;
       const nextName = typeof patch.name === "string" ? patch.name : undefined;
@@ -218,7 +217,6 @@ export const portfoliosHandlers = [
         );
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updated = updateAsset(getUser().id, portfolioId, assetId, patch);
       if (!updated)
         return HttpResponse.json({ message: "Not found" }, { status: 404 });
