@@ -1,16 +1,6 @@
 import React from "react";
-import {
-  Box,
-  Stack,
-  Typography,
-  IconButton,
-  Tooltip,
-  Divider,
-  Paper,
-} from "@mui/material";
+import { Box, Stack, Typography, Divider, Paper } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
-import DarkModeIcon from "@mui/icons-material/DarkMode";
-import LightModeIcon from "@mui/icons-material/LightMode";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import { Logo } from "../../../shared/UI/Logo";
 import { useThemeMode } from "../../../app/theme/ThemeModeProvider";
@@ -25,7 +15,7 @@ type AuthShellProps = {
 
 export function AuthShell({ title, subtitle, children }: AuthShellProps) {
   const theme = useTheme();
-  const { mode, toggleMode } = useThemeMode();
+  const { mode } = useThemeMode();
 
   const primaryGlow = alpha(
     theme.palette.primary.main,
@@ -95,13 +85,6 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
                   Twoje portfele. Twoje decyzje. Lepszy wgląd.
                 </Typography>
               </Box>
-
-              {/* theme toggle na górze (widoczny zawsze) */}
-              <Tooltip title={mode === "light" ? "Tryb ciemny" : "Tryb jasny"}>
-                <IconButton onClick={toggleMode} aria-label="Przełącz motyw">
-                  {mode === "light" ? <DarkModeIcon /> : <LightModeIcon />}
-                </IconButton>
-              </Tooltip>
             </Stack>
 
             <Box>

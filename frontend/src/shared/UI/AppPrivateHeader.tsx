@@ -30,7 +30,7 @@ export function AppPrivateHeader() {
           sx={{ textDecoration: "none", color: "inherit" }}
           aria-label="SmartInwestor - dashboard"
         >
-          <Logo size={28} />
+          <Logo size={28} radius={0.5} />
           <Typography variant="h6" sx={{ fontWeight: 800 }}>
             SmartInwestor
           </Typography>
