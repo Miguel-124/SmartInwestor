@@ -21,6 +21,16 @@ function uid(prefix: string) {
   return `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now()}`;
 }
 
+/**
+ * Maps user IDs to their mock portfolios.
+ *
+ * Each portfolio contains identifying metadata and a list of assets with
+ * symbol, name, quantity, price, purchase date, and currency information.
+ *
+ * @example
+ * // Access a user's portfolios:
+ * // portfoliosByUser[userId]
+ */
 const portfoliosByUser: Record<string, DbPortfolio[]> = {
   [meFixture.id]: [
     {

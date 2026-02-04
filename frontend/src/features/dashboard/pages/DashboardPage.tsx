@@ -163,7 +163,15 @@ export function DashboardPage() {
           alignItems: "stretch",
         }}
       >
-        <PortfolioPieChart items={pieItems} currency={baseCurrency} />
+        <Card sx={{ borderRadius: 2 }}>
+          <CardActionArea
+            onClick={() => navigate("/chartsPie")}
+            aria-label="Otwórz szczegółowe wykresy"
+          >
+            <PortfolioPieChart items={pieItems} currency={baseCurrency} />
+          </CardActionArea>
+        </Card>
+
         <Card sx={{ borderRadius: 2 }}>
           <CardActionArea
             onClick={() => navigate("/charts")}
