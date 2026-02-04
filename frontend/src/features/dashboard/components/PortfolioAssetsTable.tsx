@@ -1,14 +1,17 @@
 import React from "react";
 import {
   Box,
+  IconButton,
   Paper,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
 } from "@mui/material";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 
 function formatMoney(value: number, currency: string) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency }).format(
@@ -50,9 +53,16 @@ export function PortfolioAssetsTable({
         borderColor: "divider",
       }}
     >
-      <Typography variant="h6" sx={{ fontWeight: 900, mb: 2 }}>
-        Portfele i aktywa
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 900 }}>
+          Portfele i aktywa
+        </Typography>
+        <Tooltip title="Tabela prezentuje aktywa w każdym portfelu wraz z ilościami i wyceną w wybranej walucie.">
+          <IconButton size="small" aria-label="Pomoc: Portfele i aktywa">
+            <HelpOutlineIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Box>
 
       <Box sx={{ overflowX: "auto" }} aria-label="Tabela portfeli i aktywów">
         <Table

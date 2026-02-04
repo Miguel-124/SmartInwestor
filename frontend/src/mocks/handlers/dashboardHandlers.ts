@@ -33,12 +33,11 @@ function startOfDayUTC(d: Date) {
 }
 
 function endOfMonthUTC(d: Date) {
-  // ostatni dzień miesiąca
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0));
 }
 
 function endOfQuarterUTC(d: Date) {
-  const q = Math.floor(d.getUTCMonth() / 3); // 0..3
+  const q = Math.floor(d.getUTCMonth() / 3);
   const endMonth = q * 3 + 2;
   return new Date(Date.UTC(d.getUTCFullYear(), endMonth + 1, 0));
 }
@@ -78,24 +77,20 @@ function buildAdaptiveHistory(
   const todayIso = toIsoDate(new Date());
   const today = toUtcDate(todayIso);
 
-  // wyciągamy tylko sensowne daty <= dziś
   const valid = assets
     .filter((a) => isIsoDateString(a.purchasedAt))
     .map((a) => ({ ...a, purchased: toUtcDate(a.purchasedAt) }))
     .filter((a) => a.purchased <= today);
 
   if (valid.length === 0) {
-    // brak aktywów -> historia 0 od dziś (żeby wykres nie crashował)
     return [{ date: todayIso, totalValue: 0 }];
   }
 
-  // start = najwcześniejszy zakup
   valid.sort((a, b) => a.purchased.getTime() - b.purchased.getTime());
   const start = valid[0].purchased;
 
   const rangeDays = daysBetweenUTC(start, today);
 
-  // dobór granulacji
   const unit: "day" | "month" | "quarter" | "year" =
     rangeDays <= 90
       ? "day"
@@ -107,10 +102,8 @@ function buildAdaptiveHistory(
 
   const points: Date[] = [];
 
-  // zawsze zaczynamy od dokładnej daty pierwszego aktywa
   points.push(startOfDayUTC(start));
 
-  // generujemy kolejne punkty zależnie od jednostki, zawsze <= today
   let cursor = startOfDayUTC(start);
 
   const pushIfNew = (d: Date) => {
@@ -124,7 +117,6 @@ function buildAdaptiveHistory(
     if (unit === "day") {
       next = addDaysUTC(cursor, 1);
     } else if (unit === "month") {
-      // idziemy miesiącami, ale punkt to koniec miesiąca (żeby w obrębie miesiąca skok “był widoczny”)
       const end = endOfMonthUTC(cursor);
       next =
         end.getTime() > cursor.getTime()
@@ -147,11 +139,9 @@ function buildAdaptiveHistory(
     if (next > today) next = today;
     pushIfNew(next);
 
-    // przesuwamy cursor: dzień po punkcie (żeby uniknąć pętli w miesiąc/kwartał/rok)
     cursor = addDaysUTC(next, 1);
   }
 
-  // valueAt(date) = suma wartości aktywów kupionych <= date
   const history = points.map((d) => {
     const totalValue = valid.reduce((sum, a) => {
       if (a.purchased <= d) return sum + a.value;
@@ -161,7 +151,6 @@ function buildAdaptiveHistory(
     return { date: toIsoDate(d), totalValue: Math.round(totalValue) };
   });
 
-  // gwarancja, że ostatni punkt jest “dzisiaj”
   const last = history[history.length - 1];
   if (!last || last.date !== todayIso) {
     const totalValue = valid.reduce((sum, a) => sum + a.value, 0);

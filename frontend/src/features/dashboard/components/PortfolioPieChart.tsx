@@ -1,6 +1,7 @@
-import { Box, Paper, Stack, Typography } from "@mui/material";
+import { Box, IconButton, Paper, Stack, Typography, Tooltip } from "@mui/material";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { useTheme } from "@mui/material/styles";
-import { Pie, PieChart, ResponsiveContainer, Tooltip, Cell } from "recharts";
+import { Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip, Cell } from "recharts";
 
 type PieItem = { name: string; value: number };
 
@@ -37,9 +38,16 @@ export function PortfolioPieChart({
       }}
     >
       <Stack spacing={1} sx={{ mb: 2 }}>
-        <Typography variant="h6" sx={{ fontWeight: 900 }}>
-          Podział portfeli
-        </Typography>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography variant="h6" sx={{ fontWeight: 900 }}>
+            Podział portfeli
+          </Typography>
+          <Tooltip title="Wykres pokazuje udział wartości każdego portfela w łącznej wartości aktywów.">
+            <IconButton size="small" aria-label="Pomoc: Podział portfeli">
+              <HelpOutlineIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Stack>
         <Typography variant="body2" color="text.secondary">
           Udział wartości portfeli w całości
         </Typography>
@@ -64,7 +72,7 @@ export function PortfolioPieChart({
                 <Cell key={idx} fill={colors[idx % colors.length]} />
               ))}
             </Pie>
-            <Tooltip
+            <RechartsTooltip
               formatter={(
                 value: number | undefined,
                 name: string | undefined,

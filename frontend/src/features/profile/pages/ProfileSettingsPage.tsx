@@ -9,6 +9,7 @@ import {
   FormControlLabel,
   FormHelperText,
   FormLabel,
+  IconButton,
   Paper,
   Radio,
   RadioGroup,
@@ -16,7 +17,9 @@ import {
   TextField,
   Typography,
   Checkbox,
+  Tooltip,
 } from "@mui/material";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
@@ -226,9 +229,19 @@ export function ProfileSettingsPage() {
       <Stack spacing={3} aria-label="Profile settings page">
         <Paper sx={{ p: 3, borderRadius: 2 }}>
           <Stack spacing={1}>
-            <Typography variant="h6" sx={{ fontWeight: 800 }}>
-              Podstawowe informacje
-            </Typography>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                Podstawowe informacje
+              </Typography>
+              <Tooltip title="Tutaj znajdziesz identyfikator konta i datę utworzenia.">
+                <IconButton
+                  size="small"
+                  aria-label="Pomoc: Podstawowe informacje"
+                >
+                  <HelpOutlineIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
             <Typography color="text.secondary">
               ID użytkownika: <strong>{profile.id}</strong>
             </Typography>

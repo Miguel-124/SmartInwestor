@@ -22,6 +22,8 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import { Link as RouterLink } from "react-router-dom";
 
 import { PortfolioDialog } from "../components/PortfolioDialog";
 import { AssetDialog } from "../components/AssetDialog";
@@ -126,22 +128,40 @@ export function PortfoliosPage() {
         justifyContent="space-between"
       >
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 950 }}>
-            Portfele
-          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="h4" sx={{ fontWeight: 950 }}>
+              Portfele
+            </Typography>
+            <Tooltip title="Sekcja zarządzania portfelami i aktywami. Szczegółowy opis w instrukcji.">
+              <IconButton size="small" aria-label="Pomoc: Portfele">
+                <HelpOutlineIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
           <Typography color="text.secondary">
             Zarządzaj portfelami i aktywami. Dodawaj, edytuj i usuwaj pozycje.
           </Typography>
         </Box>
 
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setCreateOpen(true)}
-          aria-label="Dodaj portfel"
-        >
-          Dodaj portfel
-        </Button>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Button
+            component={RouterLink}
+            to="/profile/help#instrukcja-portfele"
+            variant="outlined"
+            size="small"
+            aria-label="Instrukcja portfeli"
+          >
+            Instrukcja
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setCreateOpen(true)}
+            aria-label="Dodaj portfel"
+          >
+            Dodaj portfel
+          </Button>
+        </Stack>
       </Stack>
 
       {portfolios.length === 0 ? (

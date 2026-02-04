@@ -11,9 +11,14 @@ import {
   AccordionSummary,
   Box,
   Button,
+  Card,
+  CardContent,
   Chip,
   Divider,
   Link,
+  List,
+  ListItem,
+  ListItemText,
   Paper,
   Snackbar,
   Stack,
@@ -109,6 +114,146 @@ export function ProfileHelpPage() {
     <ProfileShell title="Pomoc">
       <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }}>
         <Stack spacing={3}>
+          {/* INSTRUKCJA */}
+          <Stack spacing={2}>
+            <Typography variant="h6" sx={{ fontWeight: 900 }}>
+              Instrukcja użytkowania (screenshots)
+            </Typography>
+            <Typography color="text.secondary">
+              Poniżej znajdziesz opis głównych sekcji aplikacji wraz ze
+              screenami i krótką instrukcją obsługi.
+            </Typography>
+
+            <Stack direction="row" spacing={2} flexWrap="wrap">
+              <Link href="#instrukcja-dashboard">Dashboard</Link>
+              <Link href="#instrukcja-portfele">Portfele</Link>
+              <Link href="#instrukcja-analiza">Analiza</Link>
+            </Stack>
+
+            <Card id="instrukcja-dashboard" sx={{ borderRadius: 2 }}>
+              <CardContent>
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  spacing={3}
+                  alignItems={{ md: "center" }}
+                >
+                  <Box
+                    component="img"
+                    src="/assets/AppScreenshoots/dashboard.png"
+                    alt="Dashboard"
+                    sx={{
+                      width: { xs: "100%", md: 320 },
+                      borderRadius: 2,
+                      border: "1px solid",
+                      borderColor: "divider",
+                    }}
+                  />
+                  <Stack spacing={1} sx={{ flex: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                      Dashboard — podsumowanie portfeli
+                    </Typography>
+                    <Typography color="text.secondary">
+                      Sekcja prezentuje agregaty wartości i trend łączny.
+                    </Typography>
+                    <List dense>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemText primary="Wykres kołowy pokazuje udział wartości portfeli w całości." />
+                      </ListItem>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemText primary="Wykres liniowy obrazuje trend wartości w czasie (kliknij, aby przejść do wykresów)." />
+                      </ListItem>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemText primary="Tabela poniżej pokazuje aktywa i ich wyceny per portfel." />
+                      </ListItem>
+                    </List>
+                  </Stack>
+                </Stack>
+              </CardContent>
+            </Card>
+
+            <Card id="instrukcja-portfele" sx={{ borderRadius: 2 }}>
+              <CardContent>
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  spacing={3}
+                  alignItems={{ md: "center" }}
+                >
+                  <Box
+                    component="img"
+                    src="/assets/AppScreenshoots/portfolio.png"
+                    alt="Portfele"
+                    sx={{
+                      width: { xs: "100%", md: 320 },
+                      borderRadius: 2,
+                      border: "1px solid",
+                      borderColor: "divider",
+                    }}
+                  />
+                  <Stack spacing={1} sx={{ flex: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                      Portfele — zarządzanie aktywami
+                    </Typography>
+                    <Typography color="text.secondary">
+                      Tutaj tworzysz portfele i dodajesz do nich aktywa.
+                    </Typography>
+                    <List dense>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemText primary="Dodaj portfel i nadaj mu nazwę (np. Długoterminowy)." />
+                      </ListItem>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemText primary="Dodaj aktywa, uzupełniając symbol, ilość, cenę zakupu i datę." />
+                      </ListItem>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemText primary="Użyj ikon edycji/usuwania do aktualizacji danych portfela." />
+                      </ListItem>
+                    </List>
+                  </Stack>
+                </Stack>
+              </CardContent>
+            </Card>
+
+            <Card id="instrukcja-analiza" sx={{ borderRadius: 2 }}>
+              <CardContent>
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  spacing={3}
+                  alignItems={{ md: "center" }}
+                >
+                  <Box
+                    component="img"
+                    src="/assets/AppScreenshoots/analysis.png"
+                    alt="Analiza"
+                    sx={{
+                      width: { xs: "100%", md: 320 },
+                      borderRadius: 2,
+                      border: "1px solid",
+                      borderColor: "divider",
+                    }}
+                  />
+                  <Stack spacing={1} sx={{ flex: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                      Analiza — rekomendacje i ryzyko
+                    </Typography>
+                    <Typography color="text.secondary">
+                      Analiza uwzględnia profil ryzyka i strukturę portfeli.
+                    </Typography>
+                    <List dense>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemText primary="Profil ryzyka wpływa na ocenę zgodności i priorytety rekomendacji." />
+                      </ListItem>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemText primary="Sekcje ekspozycji i stress testów pomagają wykrywać koncentrację ryzyka." />
+                      </ListItem>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemText primary="Po zmianach w portfelach analiza jest przeliczana automatycznie." />
+                      </ListItem>
+                    </List>
+                  </Stack>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Stack>
+
           {/* QUICK START */}
           <Stack spacing={1.25}>
             <Box

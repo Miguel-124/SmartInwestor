@@ -1,12 +1,20 @@
-import { Box, Paper, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  Paper,
+  Stack,
+  Tooltip as MuiTooltip,
+  Typography,
+} from "@mui/material";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import {
   Line,
   LineChart,
   ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
   CartesianGrid,
+  Tooltip,
 } from "recharts";
 
 function formatMoney(value: number, currency: string) {
@@ -44,9 +52,19 @@ export function AssetsLineChart({
       }}
     >
       <Stack spacing={1} sx={{ mb: 2 }}>
-        <Typography variant="h6" sx={{ fontWeight: 900 }}>
-          Wartość aktywów w czasie
-        </Typography>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography variant="h6" sx={{ fontWeight: 900 }}>
+            Wartość aktywów w czasie
+          </Typography>
+          <MuiTooltip title="Trend łącznej wartości portfeli w czasie. Służy do obserwacji dynamiki wzrostu/spadku.">
+            <IconButton
+              size="small"
+              aria-label="Pomoc: Wartość aktywów w czasie"
+            >
+              <HelpOutlineIcon fontSize="small" />
+            </IconButton>
+          </MuiTooltip>
+        </Stack>
         <Typography variant="body2" color="text.secondary">
           Zmiany wartości łącznej od założenia konta
         </Typography>

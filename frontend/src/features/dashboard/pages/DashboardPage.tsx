@@ -1,9 +1,12 @@
 import {
   Alert,
   Box,
+  Button,
   Card,
   CircularProgress,
+  IconButton,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { useDashboardSummaryQuery } from "../api/hooks";
@@ -11,7 +14,8 @@ import { PortfolioPieChart } from "../components/PortfolioPieChart";
 import { PortfolioAssetsTable } from "../components/PortfolioAssetsTable";
 import { AssetsLineChart } from "../components/AssetsLineChart";
 import { useMeQuery } from "../../auth/api/useMeQuery";
-import { useNavigate } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 
 import { CardActionArea } from "@mui/material";
 
@@ -81,15 +85,39 @@ export function DashboardPage() {
 
   return (
     <Stack spacing={3} aria-label="Dashboard page">
-      <Box>
-        <Typography variant="h4" sx={{ fontWeight: 950 }}>
-          Witaj, {me.firstName} 👋
-        </Typography>
-        <Typography color="text.secondary">
-          Łączna wartość aktywów:{" "}
-          <strong>{formatMoney(data.totalValue, data.currency)}</strong>
-        </Typography>
-      </Box>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
+        alignItems={{ sm: "center" }}
+        justifyContent="space-between"
+      >
+        <Box>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="h4" sx={{ fontWeight: 950 }}>
+              Witaj, {me.firstName} 👋
+            </Typography>
+            <Tooltip title="Podsumowanie wartości portfeli oraz kluczowe wskaźniki. Szczegóły w instrukcji.">
+              <IconButton size="small" aria-label="Pomoc: Dashboard">
+                <HelpOutlineIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+          <Typography color="text.secondary">
+            Łączna wartość aktywów:{" "}
+            <strong>{formatMoney(data.totalValue, data.currency)}</strong>
+          </Typography>
+        </Box>
+
+        <Button
+          component={RouterLink}
+          to="/profile/help#instrukcja-dashboard"
+          variant="outlined"
+          size="small"
+          aria-label="Instrukcja dashboardu"
+        >
+          Instrukcja
+        </Button>
+      </Stack>
 
       <Box
         sx={{
