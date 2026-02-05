@@ -12,6 +12,8 @@ export type LoginResponseDto = {
   };
 };
 
+export type GoogleLoginResponseDto = LoginResponseDto;
+
 export type RegisterRequestDto = {
   firstName: string;
   lastName: string;

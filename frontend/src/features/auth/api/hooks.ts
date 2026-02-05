@@ -13,3 +13,9 @@ export function useRegisterMutation() {
     mutationFn: (body: RegisterRequestDto) => authApi.register(body),
   });
 }
+
+export function useGoogleLoginMutation() {
+  return useMutation({
+    mutationFn: () => authApi.googleLogin(),
+  });
+}

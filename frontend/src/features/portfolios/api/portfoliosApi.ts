@@ -11,19 +11,22 @@ import type {
 } from "../types";
 
 export const portfoliosApi = {
-  getAll: () => httpClient<GetPortfoliosResponseDto>("/portfolios"),
+  getAll: () => httpClient<GetPortfoliosResponseDto>("/api/portfolios"),
 
   createPortfolio: (body: CreatePortfolioRequestDto) =>
-    httpClient<PortfolioDto>("/portfolios", { method: "POST", body }),
+    httpClient<PortfolioDto>("/api/portfolios", { method: "POST", body }),
 
   updatePortfolio: (id: string, body: UpdatePortfolioRequestDto) =>
-    httpClient<PortfolioDto>(`/portfolios/${id}`, { method: "PATCH", body }),
+    httpClient<PortfolioDto>(`/api/portfolios/${id}`, {
+      method: "PATCH",
+      body,
+    }),
 
   deletePortfolio: (id: string) =>
-    httpClient<{ ok: boolean }>(`/portfolios/${id}`, { method: "DELETE" }),
+    httpClient<{ ok: boolean }>(`/api/portfolios/${id}`, { method: "DELETE" }),
 
   addAsset: (portfolioId: string, body: CreateAssetRequestDto) =>
-    httpClient<AssetDto>(`/portfolios/${portfolioId}/assets`, {
+    httpClient<AssetDto>(`/api/portfolios/${portfolioId}/assets`, {
       method: "POST",
       body,
     }),
@@ -33,14 +36,14 @@ export const portfoliosApi = {
     assetId: string,
     body: UpdateAssetRequestDto,
   ) =>
-    httpClient<AssetDto>(`/portfolios/${portfolioId}/assets/${assetId}`, {
+    httpClient<AssetDto>(`/api/portfolios/${portfolioId}/assets/${assetId}`, {
       method: "PATCH",
       body,
     }),
 
   deleteAsset: (portfolioId: string, assetId: string) =>
     httpClient<{ ok: boolean }>(
-      `/portfolios/${portfolioId}/assets/${assetId}`,
+      `/api/portfolios/${portfolioId}/assets/${assetId}`,
       { method: "DELETE" },
     ),
 
@@ -50,7 +53,7 @@ export const portfoliosApi = {
     body: SellAssetRequestDto,
   ) =>
     httpClient<{ ok: boolean }>(
-      `/portfolios/${portfolioId}/assets/${assetId}/sell`,
+      `/api/portfolios/${portfolioId}/assets/${assetId}/sell`,
       { method: "POST", body },
     ),
 };

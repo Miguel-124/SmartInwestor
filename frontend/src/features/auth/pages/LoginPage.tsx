@@ -14,7 +14,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useNavigate } from "react-router-dom";
 import React from "react";
-import { useLoginMutation } from "../api/hooks";
+import { useGoogleLoginMutation, useLoginMutation } from "../api/hooks";
 import { setAuthToken } from "../../../shared/auth/tokenStorage";
 import { AuthShell } from "../components/AuthShell";
 import { useQueryClient } from "@tanstack/react-query";
@@ -33,6 +33,7 @@ type FormValues = z.infer<typeof schema>;
 export function LoginPage() {
   const navigate = useNavigate();
   const loginMutation = useLoginMutation();
+  const googleLoginMutation = useGoogleLoginMutation();
   const [showPassword, setShowPassword] = React.useState(false);
   const queryClient = useQueryClient();
 
@@ -57,6 +58,19 @@ export function LoginPage() {
 
     navigate("/dashboard");
   });
+
+  const handleGoogleLogin = async () => {
+    const data = await googleLoginMutation.mutateAsync();
+    setAuthToken(data.token);
+
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["me"] }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] }),
+    ]);
+
+    sessionStorage.setItem("onboardingAllowed", "1");
+    navigate("/onboarding");
+  };
 
   return (
     <AuthShell
@@ -126,6 +140,20 @@ export function LoginPage() {
               ) : (
                 "Zaloguj się"
               )}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outlined"
+              onClick={handleGoogleLogin}
+              disabled={googleLoginMutation.isPending}
+              aria-label="Zaloguj przez Google"
+              size="large"
+              sx={{ py: 1.2, fontWeight: 800 }}
+            >
+              {googleLoginMutation.isPending
+                ? "Łączenie z Google..."
+                : "Zaloguj przez Google"}
             </Button>
 
             <Stack

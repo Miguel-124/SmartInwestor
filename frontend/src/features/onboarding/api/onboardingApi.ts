@@ -6,7 +6,7 @@ import type {
 
 export const onboardingApi = {
   submit: (payload: OnboardingSubmitRequestDto) =>
-    httpClient<OnboardingSubmitResponseDto>("/onboarding", {
+    httpClient<OnboardingSubmitResponseDto>("/api/onboarding", {
       method: "POST",
       body: payload,
     }),

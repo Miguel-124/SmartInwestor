@@ -33,6 +33,17 @@ export const authHandlers = [
     });
   }),
 
+  http.post("/api/auth/google", async () => {
+    return HttpResponse.json({
+      token: "mock-google-token-123",
+      user: {
+        firstName: "Jan",
+        lastName: "Kowalski",
+        email: "jan.kowalski@gmail.com",
+      },
+    });
+  }),
+
   http.post("/api/auth/register", async ({ request }) => {
     const body = (await request.json().catch(() => ({}))) as RegisterBody;
 

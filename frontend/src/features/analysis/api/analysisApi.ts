@@ -3,7 +3,7 @@ import type { AnalysisRequestDto, AnalysisResponseDto } from "../types";
 
 export const analysisApi = {
   analyze: (payload: AnalysisRequestDto) =>
-    httpClient<AnalysisResponseDto>("/analysis", {
+    httpClient<AnalysisResponseDto>("/api/analysis", {
       method: "POST",
       body: payload,
     }),
