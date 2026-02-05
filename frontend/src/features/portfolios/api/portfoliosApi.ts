@@ -7,6 +7,7 @@ import type {
   UpdateAssetRequestDto,
   UpdatePortfolioRequestDto,
   AssetDto,
+  SellAssetRequestDto,
 } from "../types";
 
 export const portfoliosApi = {
@@ -41,5 +42,15 @@ export const portfoliosApi = {
     httpClient<{ ok: boolean }>(
       `/portfolios/${portfolioId}/assets/${assetId}`,
       { method: "DELETE" },
+    ),
+
+  sellAsset: (
+    portfolioId: string,
+    assetId: string,
+    body: SellAssetRequestDto,
+  ) =>
+    httpClient<{ ok: boolean }>(
+      `/portfolios/${portfolioId}/assets/${assetId}/sell`,
+      { method: "POST", body },
     ),
 };

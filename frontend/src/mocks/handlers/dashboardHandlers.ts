@@ -1,5 +1,5 @@
 import { http, HttpResponse } from "msw";
-import { listPortfolios } from "../db/portfoliosDb";
+import { getMockMarketPrice, listPortfolios } from "../db/portfoliosDb";
 import { getUser } from "../db/usersDb";
 
 function isIsoDateString(v: string) {
@@ -167,21 +167,68 @@ export const dashboardHandlers = [
     const db = listPortfolios(getUser().id);
 
     const portfolios = db.map((p) => {
-      const assets = p.assets.map((a) => ({
-        ...a,
-        value: a.quantity * a.price,
-      }));
-      const totalValue = assets.reduce((acc, a) => acc + a.value, 0);
+      const assets = p.assets.map((a) => {
+        const value = a.quantity * a.price;
+        const marketPrice = getMockMarketPrice(a.symbol, a.price);
+        const marketValue = marketPrice * a.quantity;
+        const changeValue = marketValue - value;
+        const changePercent = value > 0 ? (changeValue / value) * 100 : 0;
 
-      return { id: p.id, name: p.name, totalValue, assets };
+        return {
+          ...a,
+          value,
+          marketPrice,
+          marketValue,
+          changeValue,
+          changePercent,
+        };
+      });
+      const totalValue = assets.reduce((acc, a) => acc + a.value, 0);
+      const totalMarketValue = assets.reduce(
+        (acc, a) => acc + a.marketValue,
+        0,
+      );
+      const changeValue = totalMarketValue - totalValue;
+      const changePercent =
+        totalValue > 0 ? (changeValue / totalValue) * 100 : 0;
+
+      return {
+        id: p.id,
+        name: p.name,
+        totalValue,
+        marketValue: totalMarketValue,
+        changeValue,
+        changePercent,
+        assets,
+      };
     });
 
     const allAssets = portfolios.flatMap((p) =>
       p.assets.map((a) => ({ purchasedAt: a.purchasedAt, value: a.value })),
     );
-    const historyRaw = buildAdaptiveHistory(allAssets);
-    const history = downsampleEvenly(historyRaw, MAX_DASHBOARD_POINTS);
+    const allMarketAssets = portfolios.flatMap((p) =>
+      p.assets.map((a) => ({
+        purchasedAt: a.purchasedAt,
+        value: a.marketValue,
+      })),
+    );
 
-    return HttpResponse.json({ currency, portfolios, history });
+    const historyRaw = buildAdaptiveHistory(allAssets);
+    const marketHistoryRaw = buildAdaptiveHistory(allMarketAssets);
+    const history = downsampleEvenly(historyRaw, MAX_DASHBOARD_POINTS);
+    const marketHistory = downsampleEvenly(
+      marketHistoryRaw,
+      MAX_DASHBOARD_POINTS,
+    );
+    const marketMap = new Map(marketHistory.map((h) => [h.date, h.totalValue]));
+
+    return HttpResponse.json({
+      currency,
+      portfolios,
+      history: history.map((h) => ({
+        ...h,
+        marketValue: marketMap.get(h.date) ?? h.totalValue,
+      })),
+    });
   }),
 ];

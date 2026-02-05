@@ -66,6 +66,7 @@ export function ChartsPage() {
               history: data.total.history.map((p) => ({
                 ...p,
                 totalValue: toBase(p.totalValue),
+                marketValue: toBase(p.marketValue ?? p.totalValue),
               })),
             };
 
@@ -74,6 +75,15 @@ export function ChartsPage() {
               history: p.history.map((h) => ({
                 ...h,
                 totalValue: toBase(h.totalValue),
+                marketValue: toBase(h.marketValue ?? h.totalValue),
+              })),
+              assets: p.assets?.map((a) => ({
+                ...a,
+                history: a.history.map((h) => ({
+                  ...h,
+                  totalValue: toBase(h.totalValue),
+                  marketValue: toBase(h.marketValue ?? h.totalValue),
+                })),
               })),
             }));
 

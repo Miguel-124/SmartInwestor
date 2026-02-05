@@ -23,6 +23,9 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import SellIcon from "@mui/icons-material/Sell";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { Link as RouterLink } from "react-router-dom";
 import { useProfileQuery } from "../../profile/api/hooks";
 import { useFxRates, convertToBase } from "../../../shared/api/fxRates";
@@ -31,6 +34,7 @@ import type { CurrencyCode } from "../../../shared/types/currency";
 import { PortfolioDialog } from "../components/PortfolioDialog";
 import { AssetDialog } from "../components/AssetDialog";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { SellAssetDialog } from "../components/SellAssetDialog";
 
 import {
   useAddAssetMutation,
@@ -38,6 +42,7 @@ import {
   useDeleteAssetMutation,
   useDeletePortfolioMutation,
   usePortfoliosQuery,
+  useSellAssetMutation,
   useUpdateAssetMutation,
   useUpdatePortfolioMutation,
 } from "../api/hooks";
@@ -57,16 +62,35 @@ function formatQty(value: number) {
 
 function formatPurchaseDate(iso: string) {
   const [y, m, d] = iso.split("-").map(Number);
-
-  // const date = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
-  // const monthName = new Intl.DateTimeFormat("pl-PL", { month: "short" }).format(
-  //   date,
-  // );
-
   const dd = String(d).padStart(2, "0");
   const mm = String(m).padStart(2, "0");
 
   return `${dd}.${mm}.${y}`;
+}
+
+function ChangeIndicator({
+  changeValue,
+  changePercent,
+  currency,
+}: {
+  changeValue: number;
+  changePercent: number;
+  currency: string;
+}) {
+  const isPositive = changeValue >= 0;
+  const color = isPositive ? "success.main" : "error.main";
+  const Icon = isPositive ? ArrowUpwardIcon : ArrowDownwardIcon;
+
+  return (
+    <Stack direction="row" spacing={0.5} alignItems="center">
+      <Icon sx={{ fontSize: 16, color }} />
+      <Typography sx={{ color, fontWeight: 700 }} variant="body2">
+        {formatMoney(Math.abs(changeValue), currency)} (
+        {Math.abs(changePercent).toFixed(2)}
+        %)
+      </Typography>
+    </Stack>
+  );
 }
 
 export function PortfoliosPage() {
@@ -79,6 +103,7 @@ export function PortfoliosPage() {
   const addAsset = useAddAssetMutation();
   const updateAsset = useUpdateAssetMutation();
   const deleteAsset = useDeleteAssetMutation();
+  const sellAsset = useSellAssetMutation();
 
   const [createOpen, setCreateOpen] = React.useState(false);
 
@@ -95,6 +120,13 @@ export function PortfoliosPage() {
     portfolioId: string;
     assetId: string;
   } | null>(null);
+  const [sellAssetTarget, setSellAssetTarget] = React.useState<{
+    portfolio: PortfolioModel;
+    assetId: string;
+  } | null>(null);
+  const [expandedAssets, setExpandedAssets] = React.useState<
+    Record<string, string | null>
+  >({});
 
   const baseCurrency =
     (profileQuery.data?.baseCurrency as CurrencyCode | undefined) ?? "USD";
@@ -136,13 +168,31 @@ export function PortfoliosPage() {
       ...a,
       price: convertToBase(a.price, a.currency, baseCurrency, fxQuery.data),
       value: convertToBase(a.value, a.currency, baseCurrency, fxQuery.data),
+      marketPrice: convertToBase(
+        a.marketPrice ?? a.price,
+        a.currency,
+        baseCurrency,
+        fxQuery.data,
+      ),
+      marketValue: convertToBase(
+        a.marketValue ?? a.value,
+        a.currency,
+        baseCurrency,
+        fxQuery.data,
+      ),
     }));
 
     const totalValue = assets.reduce((acc, a) => acc + a.value, 0);
+    const marketValue = assets.reduce((acc, a) => acc + a.marketValue, 0);
+    const changeValue = marketValue - totalValue;
+    const changePercent = totalValue > 0 ? (changeValue / totalValue) * 100 : 0;
 
     return {
       ...p,
       totalValue,
+      marketValue,
+      changeValue,
+      changePercent,
       assets,
     };
   });
@@ -230,8 +280,15 @@ export function PortfoliosPage() {
                     <Typography sx={{ fontWeight: 900 }}>{p.name}</Typography>
                     <Typography variant="body2" color="text.secondary">
                       Wartość: {formatMoney(p.totalValue, baseCurrency)} •
-                      Aktywów: {p.assets.length}
+                      Wartość rynkowa:{" "}
+                      {formatMoney(p.marketValue, baseCurrency)} • Aktywów:{" "}
+                      {p.assets.length}
                     </Typography>
+                    <ChangeIndicator
+                      changeValue={p.changeValue}
+                      changePercent={p.changePercent}
+                      currency={baseCurrency}
+                    />
                   </Box>
 
                   <Stack
@@ -270,12 +327,11 @@ export function PortfoliosPage() {
               </AccordionSummary>
 
               <AccordionDetails>
-                <Box sx={{ overflowX: "auto" }}>
+                <Box>
                   <Table
                     size="small"
                     aria-label={`assets-table-${p.id}`}
                     sx={{
-                      minWidth: 920,
                       tableLayout: "fixed",
                       "& th, & td": { whiteSpace: "nowrap" },
                       "& td:first-of-type": { whiteSpace: "normal" },
@@ -283,38 +339,33 @@ export function PortfoliosPage() {
                   >
                     <TableHead>
                       <TableRow>
-                        <TableCell sx={{ fontWeight: 800, width: 320 }}>
+                        <TableCell sx={{ fontWeight: 800, width: 34 }} />
+                        <TableCell sx={{ fontWeight: 800, width: 220 }}>
                           Nazwa
                         </TableCell>
                         <TableCell sx={{ fontWeight: 800, width: 110 }}>
                           Symbol
                         </TableCell>
-                        <TableCell sx={{ fontWeight: 800, width: 90 }}>
-                          Waluta
-                        </TableCell>
-                        <TableCell sx={{ fontWeight: 800, width: 120 }}>
-                          Data zakupu
-                        </TableCell>
                         <TableCell
-                          sx={{ fontWeight: 800, width: 110 }}
+                          sx={{ fontWeight: 800, width: 80 }}
                           align="right"
                         >
                           Ilość
                         </TableCell>
                         <TableCell
-                          sx={{ fontWeight: 800, width: 140 }}
+                          sx={{ fontWeight: 800, width: 160 }}
                           align="right"
                         >
-                          Cena (bazowa)
+                          Wartość rynkowa
                         </TableCell>
                         <TableCell
                           sx={{ fontWeight: 800, width: 160 }}
                           align="right"
                         >
-                          Wartość (bazowa)
+                          Zmiana
                         </TableCell>
                         <TableCell
-                          sx={{ fontWeight: 800, width: 120 }}
+                          sx={{ fontWeight: 800, width: 140 }}
                           align="right"
                         >
                           Akcje
@@ -325,7 +376,7 @@ export function PortfoliosPage() {
                     <TableBody>
                       {p.assets.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6}>
+                          <TableCell colSpan={7}>
                             <Typography color="text.secondary">
                               Brak aktywów w tym portfelu. Kliknij „Dodaj
                               aktywo”.
@@ -333,64 +384,190 @@ export function PortfoliosPage() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        p.assets.map((a) => (
-                          <TableRow key={a.id} hover>
-                            <TableCell>{a.name}</TableCell>
-                            <TableCell sx={{ fontWeight: 800 }}>
-                              {a.symbol}
-                            </TableCell>
-                            <TableCell>{a.currency}</TableCell>
-                            <TableCell>
-                              {formatPurchaseDate(a.purchasedAt)}
-                            </TableCell>
-                            <TableCell align="right">
-                              {formatQty(a.quantity)}
-                            </TableCell>
-                            <TableCell align="right">
-                              {formatMoney(a.price, baseCurrency)}
-                            </TableCell>
-                            <TableCell align="right">
-                              {formatMoney(a.value, baseCurrency)}
-                            </TableCell>
-                            <TableCell align="right">
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                justifyContent="flex-end"
-                              >
-                                <Tooltip title="Edytuj aktywo">
-                                  <IconButton
-                                    aria-label="Edytuj aktywo"
-                                    onClick={() =>
-                                      setAssetTarget({
-                                        portfolio: p,
-                                        assetId: a.id,
-                                      })
-                                    }
-                                    size="small"
-                                  >
-                                    <EditIcon fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
+                        p.assets.map((a) => {
+                          const isExpanded = expandedAssets[p.id] === a.id;
 
-                                <Tooltip title="Usuń aktywo">
+                          return (
+                            <React.Fragment key={a.id}>
+                              <TableRow
+                                hover
+                                onClick={() =>
+                                  setExpandedAssets((prev) => ({
+                                    ...prev,
+                                    [p.id]: prev[p.id] === a.id ? null : a.id,
+                                  }))
+                                }
+                                sx={{ cursor: "pointer" }}
+                              >
+                                <TableCell>
                                   <IconButton
-                                    aria-label="Usuń aktywo"
-                                    onClick={() =>
-                                      setDeleteAssetTarget({
-                                        portfolioId: p.id,
-                                        assetId: a.id,
-                                      })
-                                    }
                                     size="small"
+                                    aria-label={
+                                      isExpanded
+                                        ? "Zwiń szczegóły"
+                                        : "Rozwiń szczegóły"
+                                    }
                                   >
-                                    <DeleteIcon fontSize="small" />
+                                    <ExpandMoreIcon
+                                      sx={{
+                                        transform: isExpanded
+                                          ? "rotate(180deg)"
+                                          : "rotate(0deg)",
+                                        transition: "transform 0.2s ease",
+                                      }}
+                                    />
                                   </IconButton>
-                                </Tooltip>
-                              </Stack>
-                            </TableCell>
-                          </TableRow>
-                        ))
+                                </TableCell>
+                                <TableCell>{a.name}</TableCell>
+                                <TableCell sx={{ fontWeight: 800 }}>
+                                  {a.symbol}
+                                </TableCell>
+                                <TableCell align="right">
+                                  {formatQty(a.quantity)}
+                                </TableCell>
+                                <TableCell align="right">
+                                  {formatMoney(a.marketValue, baseCurrency)}
+                                </TableCell>
+                                <TableCell align="right">
+                                  <ChangeIndicator
+                                    changeValue={a.marketValue - a.value}
+                                    changePercent={
+                                      a.value > 0
+                                        ? ((a.marketValue - a.value) /
+                                            a.value) *
+                                          100
+                                        : 0
+                                    }
+                                    currency={baseCurrency}
+                                  />
+                                </TableCell>
+                                <TableCell align="right">
+                                  <Stack
+                                    direction="row"
+                                    spacing={1}
+                                    justifyContent="flex-end"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Tooltip title="Edytuj aktywo">
+                                      <IconButton
+                                        aria-label="Edytuj aktywo"
+                                        onClick={() =>
+                                          setAssetTarget({
+                                            portfolio: p,
+                                            assetId: a.id,
+                                          })
+                                        }
+                                        size="small"
+                                      >
+                                        <EditIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+
+                                    <Tooltip title="Sprzedaj aktywo">
+                                      <IconButton
+                                        aria-label="Sprzedaj aktywo"
+                                        onClick={() =>
+                                          setSellAssetTarget({
+                                            portfolio: p,
+                                            assetId: a.id,
+                                          })
+                                        }
+                                        size="small"
+                                      >
+                                        <SellIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+
+                                    <Tooltip title="Usuń aktywo">
+                                      <IconButton
+                                        aria-label="Usuń aktywo"
+                                        onClick={() =>
+                                          setDeleteAssetTarget({
+                                            portfolioId: p.id,
+                                            assetId: a.id,
+                                          })
+                                        }
+                                        size="small"
+                                      >
+                                        <DeleteIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </Stack>
+                                </TableCell>
+                              </TableRow>
+                              {isExpanded && (
+                                <TableRow>
+                                  <TableCell colSpan={7}>
+                                    <Stack
+                                      spacing={1}
+                                      sx={{
+                                        p: 1.5,
+                                        backgroundColor: "action.hover",
+                                        borderRadius: 0.5,
+                                      }}
+                                    >
+                                      <Stack
+                                        direction={{ xs: "column", md: "row" }}
+                                        spacing={2}
+                                      >
+                                        <Typography variant="body2">
+                                          <strong>Waluta:</strong> {a.currency}
+                                        </Typography>
+                                        <Typography variant="body2">
+                                          <strong>Data zakupu:</strong>{" "}
+                                          {formatPurchaseDate(a.purchasedAt)}
+                                        </Typography>
+                                        <Typography variant="body2">
+                                          <strong>Cena (bazowa):</strong>{" "}
+                                          {formatMoney(a.price, baseCurrency)}
+                                        </Typography>
+                                        <Typography variant="body2">
+                                          <strong>Wartość (bazowa):</strong>{" "}
+                                          {formatMoney(a.value, baseCurrency)}
+                                        </Typography>
+                                      </Stack>
+                                      <Stack
+                                        direction={{ xs: "column", md: "row" }}
+                                        spacing={2}
+                                      >
+                                        <Typography variant="body2">
+                                          <strong>Cena rynkowa:</strong>{" "}
+                                          {formatMoney(
+                                            a.marketPrice,
+                                            baseCurrency,
+                                          )}
+                                        </Typography>
+                                        <Typography variant="body2">
+                                          <strong>Wartość rynkowa:</strong>{" "}
+                                          {formatMoney(
+                                            a.marketValue,
+                                            baseCurrency,
+                                          )}
+                                        </Typography>
+                                        <Typography variant="body2">
+                                          <strong>Zmiana:</strong>{" "}
+                                          {formatMoney(
+                                            a.marketValue - a.value,
+                                            baseCurrency,
+                                          )}{" "}
+                                          (
+                                          {a.value > 0
+                                            ? (
+                                                ((a.marketValue - a.value) /
+                                                  a.value) *
+                                                100
+                                              ).toFixed(2)
+                                            : "0.00"}
+                                          % )
+                                        </Typography>
+                                      </Stack>
+                                    </Stack>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </React.Fragment>
+                          );
+                        })
                       )}
                     </TableBody>
                   </Table>
@@ -491,6 +668,34 @@ export function PortfoliosPage() {
           if (!deleteAssetTarget) return;
           await deleteAsset.mutateAsync(deleteAssetTarget);
           setDeleteAssetTarget(null);
+        }}
+      />
+
+      {/* SELL ASSET */}
+      <SellAssetDialog
+        open={!!sellAssetTarget}
+        title="Sprzedaj aktywo"
+        submitText="Sprzedaj"
+        assetName={
+          sellAssetTarget?.portfolio.assets.find(
+            (a) => a.id === sellAssetTarget.assetId,
+          )?.name
+        }
+        maxQuantity={
+          sellAssetTarget?.portfolio.assets.find(
+            (a) => a.id === sellAssetTarget.assetId,
+          )?.quantity ?? 0
+        }
+        onClose={() => setSellAssetTarget(null)}
+        loading={sellAsset.isPending}
+        onSubmit={async (values) => {
+          if (!sellAssetTarget) return;
+          await sellAsset.mutateAsync({
+            portfolioId: sellAssetTarget.portfolio.id,
+            assetId: sellAssetTarget.assetId,
+            body: values,
+          });
+          setSellAssetTarget(null);
         }}
       />
     </Stack>

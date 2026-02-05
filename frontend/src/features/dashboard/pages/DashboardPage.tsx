@@ -16,6 +16,8 @@ import { AssetsLineChart } from "../components/AssetsLineChart";
 import { useMeQuery } from "../../auth/api/useMeQuery";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { useProfileQuery } from "../../profile/api/hooks";
 import { useFxRates, convertToBase } from "../../../shared/api/fxRates";
 import type { CurrencyCode } from "../../../shared/types/currency";
@@ -86,18 +88,46 @@ export function DashboardPage() {
     convertToBase(amount, summaryCurrency, baseCurrency, fxQuery.data);
 
   const displayTotalValue = toBase(data.totalValue);
+  const displayTotalMarketValue = toBase(data.totalMarketValue);
+  const displayChangeValue = displayTotalMarketValue - displayTotalValue;
+  const displayChangePercent =
+    displayTotalValue > 0 ? (displayChangeValue / displayTotalValue) * 100 : 0;
   const displayPortfolios = data.portfolios.map((p) => ({
     ...p,
     totalValue: toBase(p.totalValue),
-    assets: p.assets.map((a) => ({
-      ...a,
-      price: toBase(a.price),
-      value: toBase(a.value),
-    })),
+    marketValue: toBase(p.marketValue),
+    assets: p.assets.map((a) => {
+      const baseValue = toBase(a.value);
+      const baseMarketValue = toBase(a.marketValue ?? a.value);
+      const changeValue = baseMarketValue - baseValue;
+      const changePercent = baseValue > 0 ? (changeValue / baseValue) * 100 : 0;
+
+      return {
+        ...a,
+        price: toBase(a.price),
+        value: baseValue,
+        marketPrice: toBase(a.marketPrice ?? a.price),
+        marketValue: baseMarketValue,
+        changeValue,
+        changePercent,
+      };
+    }),
   }));
+  const displayPortfoliosWithChange = displayPortfolios.map((p) => {
+    const changeValue = p.marketValue - p.totalValue;
+    const changePercent =
+      p.totalValue > 0 ? (changeValue / p.totalValue) * 100 : 0;
+
+    return {
+      ...p,
+      changeValue,
+      changePercent,
+    };
+  });
   const displayHistory = data.history.map((h) => ({
     ...h,
     totalValue: toBase(h.totalValue),
+    marketValue: toBase(h.marketValue ?? h.totalValue),
   }));
 
   if (data.portfolios.length === 0) {
@@ -114,7 +144,7 @@ export function DashboardPage() {
     );
   }
 
-  const pieItems = displayPortfolios.map((p) => ({
+  const pieItems = displayPortfoliosWithChange.map((p) => ({
     name: p.name,
     value: p.totalValue,
   }));
@@ -142,6 +172,30 @@ export function DashboardPage() {
             Łączna wartość aktywów:{" "}
             <strong>{formatMoney(displayTotalValue, baseCurrency)}</strong>
           </Typography>
+          <Typography color="text.secondary">
+            Wartość rynkowa:{" "}
+            <strong>
+              {formatMoney(displayTotalMarketValue, baseCurrency)}
+            </strong>
+          </Typography>
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            {displayChangeValue >= 0 ? (
+              <ArrowUpwardIcon sx={{ fontSize: 18, color: "success.main" }} />
+            ) : (
+              <ArrowDownwardIcon sx={{ fontSize: 18, color: "error.main" }} />
+            )}
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 700,
+                color: displayChangeValue >= 0 ? "success.main" : "error.main",
+              }}
+            >
+              {formatMoney(Math.abs(displayChangeValue), baseCurrency)} (
+              {Math.abs(displayChangePercent).toFixed(2)}
+              %)
+            </Typography>
+          </Stack>
         </Box>
 
         <Button
@@ -183,7 +237,7 @@ export function DashboardPage() {
       </Box>
 
       <PortfolioAssetsTable
-        portfolios={displayPortfolios}
+        portfolios={displayPortfoliosWithChange}
         currency={baseCurrency}
       />
     </Stack>

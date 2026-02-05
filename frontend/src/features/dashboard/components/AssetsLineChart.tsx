@@ -34,12 +34,13 @@ export function AssetsLineChart({
   history,
   currency,
 }: {
-  history: Array<{ date: Date; totalValue: number }>;
+  history: Array<{ date: Date; totalValue: number; marketValue?: number }>;
   currency: string;
 }) {
   const data = history.map((h) => ({
     dateLabel: formatMonth(h.date),
     totalValue: h.totalValue,
+    marketValue: h.marketValue ?? h.totalValue,
   }));
 
   return (
@@ -89,6 +90,15 @@ export function AssetsLineChart({
               dataKey="totalValue"
               name="Wartość"
               strokeWidth={3}
+              dot={false}
+            />
+            <Line
+              type="stepAfter"
+              dataKey="marketValue"
+              name="Wartość rynkowa"
+              strokeWidth={3}
+              strokeDasharray="6 4"
+              stroke="#1e88e5"
               dot={false}
             />
           </LineChart>

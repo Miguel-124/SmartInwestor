@@ -4,6 +4,9 @@ export type DashboardSummaryDto = {
     id: string;
     name: string;
     totalValue: number;
+    marketValue?: number;
+    changeValue?: number;
+    changePercent?: number;
     assets: Array<{
       id: string;
       symbol: string;
@@ -11,22 +14,33 @@ export type DashboardSummaryDto = {
       quantity: number;
       price: number;
       value: number;
+      marketPrice?: number;
+      marketValue?: number;
+      changeValue?: number;
+      changePercent?: number;
       purchasedAt: string;
     }>;
   }>;
   history: Array<{
     date: string;
     totalValue: number;
+    marketValue?: number;
   }>;
 };
 
 export type DashboardModel = {
   currency: string;
   totalValue: number;
+  totalMarketValue: number;
+  changeValue: number;
+  changePercent: number;
   portfolios: Array<{
     id: string;
     name: string;
     totalValue: number;
+    marketValue: number;
+    changeValue: number;
+    changePercent: number;
     assets: Array<{
       id: string;
       symbol: string;
@@ -34,10 +48,15 @@ export type DashboardModel = {
       quantity: number;
       price: number;
       value: number;
+      marketPrice: number;
+      marketValue: number;
+      changeValue: number;
+      changePercent: number;
     }>;
   }>;
   history: Array<{
     date: Date;
     totalValue: number;
+    marketValue: number;
   }>;
 };

@@ -17,7 +17,7 @@ import {
   Legend,
 } from "recharts";
 
-type Point = { date: string; totalValue: number };
+type Point = { date: string; totalValue: number; marketValue?: number };
 
 type PortfolioSeries = {
   id: string;
@@ -65,6 +65,7 @@ export function TotalValueChartCard({
       date: point.date,
       dateLabel: formatTick(point.date, pointsCount),
       total: point.totalValue,
+      totalMarket: point.marketValue ?? point.totalValue,
     };
 
     portfolios.forEach((portfolio) => {
@@ -117,9 +118,9 @@ export function TotalValueChartCard({
             <XAxis dataKey="dateLabel" interval="preserveStartEnd" />
             <YAxis />
             <Tooltip
-              formatter={(v) => [
+              formatter={(v, name) => [
                 `${Number(v).toLocaleString("pl-PL")} ${currency}`,
-                "Wartość",
+                name ?? "Wartość",
               ]}
               contentStyle={{ backgroundColor: "rgba(255, 255, 255, 0.95)" }}
             />
@@ -131,6 +132,15 @@ export function TotalValueChartCard({
               dot={false}
               name="Razem"
               stroke="#000"
+            />
+            <Line
+              type="stepAfter"
+              dataKey="totalMarket"
+              strokeWidth={2}
+              dot={false}
+              name="Razem (rynkowa)"
+              stroke="#1e88e5"
+              strokeDasharray="6 4"
             />
             {portfolios.map((portfolio, idx) =>
               visiblePortfolios.includes(portfolio.id) ? (

@@ -12,6 +12,8 @@ import {
   Typography,
 } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 
 function formatMoney(value: number, currency: string) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency }).format(
@@ -33,6 +35,9 @@ export function PortfolioAssetsTable({
     id: string;
     name: string;
     totalValue: number;
+    marketValue: number;
+    changeValue: number;
+    changePercent: number;
     assets: Array<{
       id: string;
       symbol: string;
@@ -40,10 +45,30 @@ export function PortfolioAssetsTable({
       quantity: number;
       price: number;
       value: number;
+      marketValue: number;
+      changeValue: number;
+      changePercent: number;
     }>;
   }>;
   currency: string;
 }) {
+  const renderChange = (changeValue: number, changePercent: number) => {
+    const isPositive = changeValue >= 0;
+    const color = isPositive ? "success.main" : "error.main";
+    const Icon = isPositive ? ArrowUpwardIcon : ArrowDownwardIcon;
+
+    return (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+        <Icon sx={{ fontSize: 16, color }} />
+        <Typography sx={{ color, fontWeight: 700 }} variant="body2">
+          {formatMoney(Math.abs(changeValue), currency)} (
+          {Math.abs(changePercent).toFixed(2)}
+          %)
+        </Typography>
+      </Box>
+    );
+  };
+
   return (
     <Paper
       sx={{
@@ -83,6 +108,12 @@ export function PortfolioAssetsTable({
               <TableCell sx={{ fontWeight: 800 }} align="right">
                 Wartość
               </TableCell>
+              <TableCell sx={{ fontWeight: 800 }} align="right">
+                Wartość rynkowa
+              </TableCell>
+              <TableCell sx={{ fontWeight: 800 }} align="right">
+                Zmiana
+              </TableCell>
             </TableRow>
           </TableHead>
 
@@ -112,6 +143,14 @@ export function PortfolioAssetsTable({
                       {formatMoney(p.totalValue, currency)}
                     </Typography>
                   </TableCell>
+                  <TableCell align="right">
+                    <Typography sx={{ fontWeight: 900, fontSize: 18 }}>
+                      {formatMoney(p.marketValue, currency)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    {renderChange(p.changeValue, p.changePercent)}
+                  </TableCell>
                 </TableRow>
 
                 {/* Wiersze aktywów */}
@@ -133,6 +172,12 @@ export function PortfolioAssetsTable({
                     </TableCell>
                     <TableCell align="right">
                       {formatMoney(a.value, currency)}
+                    </TableCell>
+                    <TableCell align="right">
+                      {formatMoney(a.marketValue, currency)}
+                    </TableCell>
+                    <TableCell align="right">
+                      {renderChange(a.changeValue, a.changePercent)}
                     </TableCell>
                   </TableRow>
                 ))}
