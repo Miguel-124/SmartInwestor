@@ -21,7 +21,7 @@ describe("RegisterPage", () => {
     await user.type(screen.getByLabelText("Imię"), "Jan");
     await user.type(screen.getByLabelText("Nazwisko"), "Kowalski");
     await user.type(screen.getByLabelText("Email"), "jan@example.com");
-    await user.type(screen.getByLabelText("Hasło"), "abcdefghi"); // brak cyfry i znaku
+    await user.type(screen.getByLabelText("Hasło"), "abcdefghi");
     await user.type(screen.getByLabelText("Potwierdź hasło"), "abcd");
 
     await user.click(screen.getByRole("button", { name: "Zarejestruj" }));

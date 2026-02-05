@@ -1,16 +1,6 @@
 import React from "react";
-import {
-  Box,
-  Stack,
-  Typography,
-  IconButton,
-  Tooltip,
-  Divider,
-  Paper,
-} from "@mui/material";
+import { Box, Stack, Typography, Divider, Paper } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
-import DarkModeIcon from "@mui/icons-material/DarkMode";
-import LightModeIcon from "@mui/icons-material/LightMode";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import { Logo } from "../../../shared/UI/Logo";
 import { useThemeMode } from "../../../app/theme/ThemeModeProvider";
@@ -25,7 +15,7 @@ type AuthShellProps = {
 
 export function AuthShell({ title, subtitle, children }: AuthShellProps) {
   const theme = useTheme();
-  const { mode, toggleMode } = useThemeMode();
+  const { mode } = useThemeMode();
 
   const primaryGlow = alpha(
     theme.palette.primary.main,
@@ -48,7 +38,6 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
           radial-gradient(900px 560px at 92% 18%, ${secondaryGlow}, transparent 62%)
         `,
         display: "grid",
-        // centrowanie "content max width", ale tło jest full screen
         placeItems: "center",
         p: { xs: 2, sm: 3, md: 4 },
       }}
@@ -77,7 +66,6 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
                 : "0 14px 40px rgba(15,23,42,0.10), 0 2px 12px rgba(15,23,42,0.06)",
             display: "flex",
             flexDirection: "column",
-            // na małych ekranach panel ma być niższy
             minHeight: { xs: "auto", md: 560 },
           }}
         >
@@ -95,13 +83,6 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
                   Twoje portfele. Twoje decyzje. Lepszy wgląd.
                 </Typography>
               </Box>
-
-              {/* theme toggle na górze (widoczny zawsze) */}
-              <Tooltip title={mode === "light" ? "Tryb ciemny" : "Tryb jasny"}>
-                <IconButton onClick={toggleMode} aria-label="Przełącz motyw">
-                  {mode === "light" ? <DarkModeIcon /> : <LightModeIcon />}
-                </IconButton>
-              </Tooltip>
             </Stack>
 
             <Box>
@@ -158,7 +139,7 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
           elevation={0}
           sx={{
             p: { xs: 3, sm: 4 },
-            borderRadius: 4, // <= koniec z “telefonową pigułą”
+            borderRadius: 4,
             border: `1px solid ${alpha(theme.palette.text.primary, mode === "dark" ? 0.14 : 0.08)}`,
             boxShadow:
               mode === "dark"

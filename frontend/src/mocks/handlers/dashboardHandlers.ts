@@ -1,5 +1,5 @@
 import { http, HttpResponse } from "msw";
-import { listPortfolios } from "../db/portfoliosDb";
+import { getMockMarketPrice, listPortfolios } from "../db/portfoliosDb";
 import { getUser } from "../db/usersDb";
 
 function isIsoDateString(v: string) {
@@ -33,12 +33,11 @@ function startOfDayUTC(d: Date) {
 }
 
 function endOfMonthUTC(d: Date) {
-  // ostatni dzień miesiąca
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0));
 }
 
 function endOfQuarterUTC(d: Date) {
-  const q = Math.floor(d.getUTCMonth() / 3); // 0..3
+  const q = Math.floor(d.getUTCMonth() / 3);
   const endMonth = q * 3 + 2;
   return new Date(Date.UTC(d.getUTCFullYear(), endMonth + 1, 0));
 }
@@ -78,24 +77,20 @@ function buildAdaptiveHistory(
   const todayIso = toIsoDate(new Date());
   const today = toUtcDate(todayIso);
 
-  // wyciągamy tylko sensowne daty <= dziś
   const valid = assets
     .filter((a) => isIsoDateString(a.purchasedAt))
     .map((a) => ({ ...a, purchased: toUtcDate(a.purchasedAt) }))
     .filter((a) => a.purchased <= today);
 
   if (valid.length === 0) {
-    // brak aktywów -> historia 0 od dziś (żeby wykres nie crashował)
     return [{ date: todayIso, totalValue: 0 }];
   }
 
-  // start = najwcześniejszy zakup
   valid.sort((a, b) => a.purchased.getTime() - b.purchased.getTime());
   const start = valid[0].purchased;
 
   const rangeDays = daysBetweenUTC(start, today);
 
-  // dobór granulacji
   const unit: "day" | "month" | "quarter" | "year" =
     rangeDays <= 90
       ? "day"
@@ -107,10 +102,8 @@ function buildAdaptiveHistory(
 
   const points: Date[] = [];
 
-  // zawsze zaczynamy od dokładnej daty pierwszego aktywa
   points.push(startOfDayUTC(start));
 
-  // generujemy kolejne punkty zależnie od jednostki, zawsze <= today
   let cursor = startOfDayUTC(start);
 
   const pushIfNew = (d: Date) => {
@@ -124,7 +117,6 @@ function buildAdaptiveHistory(
     if (unit === "day") {
       next = addDaysUTC(cursor, 1);
     } else if (unit === "month") {
-      // idziemy miesiącami, ale punkt to koniec miesiąca (żeby w obrębie miesiąca skok “był widoczny”)
       const end = endOfMonthUTC(cursor);
       next =
         end.getTime() > cursor.getTime()
@@ -147,11 +139,9 @@ function buildAdaptiveHistory(
     if (next > today) next = today;
     pushIfNew(next);
 
-    // przesuwamy cursor: dzień po punkcie (żeby uniknąć pętli w miesiąc/kwartał/rok)
     cursor = addDaysUTC(next, 1);
   }
 
-  // valueAt(date) = suma wartości aktywów kupionych <= date
   const history = points.map((d) => {
     const totalValue = valid.reduce((sum, a) => {
       if (a.purchased <= d) return sum + a.value;
@@ -161,7 +151,6 @@ function buildAdaptiveHistory(
     return { date: toIsoDate(d), totalValue: Math.round(totalValue) };
   });
 
-  // gwarancja, że ostatni punkt jest “dzisiaj”
   const last = history[history.length - 1];
   if (!last || last.date !== todayIso) {
     const totalValue = valid.reduce((sum, a) => sum + a.value, 0);
@@ -178,21 +167,68 @@ export const dashboardHandlers = [
     const db = listPortfolios(getUser().id);
 
     const portfolios = db.map((p) => {
-      const assets = p.assets.map((a) => ({
-        ...a,
-        value: a.quantity * a.price,
-      }));
-      const totalValue = assets.reduce((acc, a) => acc + a.value, 0);
+      const assets = p.assets.map((a) => {
+        const value = a.quantity * a.price;
+        const marketPrice = getMockMarketPrice(a.symbol, a.price);
+        const marketValue = marketPrice * a.quantity;
+        const changeValue = marketValue - value;
+        const changePercent = value > 0 ? (changeValue / value) * 100 : 0;
 
-      return { id: p.id, name: p.name, totalValue, assets };
+        return {
+          ...a,
+          value,
+          marketPrice,
+          marketValue,
+          changeValue,
+          changePercent,
+        };
+      });
+      const totalValue = assets.reduce((acc, a) => acc + a.value, 0);
+      const totalMarketValue = assets.reduce(
+        (acc, a) => acc + a.marketValue,
+        0,
+      );
+      const changeValue = totalMarketValue - totalValue;
+      const changePercent =
+        totalValue > 0 ? (changeValue / totalValue) * 100 : 0;
+
+      return {
+        id: p.id,
+        name: p.name,
+        totalValue,
+        marketValue: totalMarketValue,
+        changeValue,
+        changePercent,
+        assets,
+      };
     });
 
     const allAssets = portfolios.flatMap((p) =>
       p.assets.map((a) => ({ purchasedAt: a.purchasedAt, value: a.value })),
     );
-    const historyRaw = buildAdaptiveHistory(allAssets);
-    const history = downsampleEvenly(historyRaw, MAX_DASHBOARD_POINTS);
+    const allMarketAssets = portfolios.flatMap((p) =>
+      p.assets.map((a) => ({
+        purchasedAt: a.purchasedAt,
+        value: a.marketValue,
+      })),
+    );
 
-    return HttpResponse.json({ currency, portfolios, history });
+    const historyRaw = buildAdaptiveHistory(allAssets);
+    const marketHistoryRaw = buildAdaptiveHistory(allMarketAssets);
+    const history = downsampleEvenly(historyRaw, MAX_DASHBOARD_POINTS);
+    const marketHistory = downsampleEvenly(
+      marketHistoryRaw,
+      MAX_DASHBOARD_POINTS,
+    );
+    const marketMap = new Map(marketHistory.map((h) => [h.date, h.totalValue]));
+
+    return HttpResponse.json({
+      currency,
+      portfolios,
+      history: history.map((h) => ({
+        ...h,
+        marketValue: marketMap.get(h.date) ?? h.totalValue,
+      })),
+    });
   }),
 ];

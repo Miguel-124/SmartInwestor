@@ -7,6 +7,7 @@ export type DbAsset = {
   quantity: number;
   price: number;
   purchasedAt: string;
+  currency: "PLN" | "EUR" | "USD";
 };
 
 export type DbPortfolio = {
@@ -18,6 +19,21 @@ export type DbPortfolio = {
 
 function uid(prefix: string) {
   return `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now()}`;
+}
+
+function hashSymbol(symbol: string) {
+  let hash = 0;
+  for (let i = 0; i < symbol.length; i += 1) {
+    hash = (hash * 31 + symbol.charCodeAt(i)) % 100000;
+  }
+  return hash;
+}
+
+export function getMockMarketPrice(symbol: string, price: number) {
+  const hash = hashSymbol(symbol.toUpperCase());
+  const factor = 0.8 + (hash % 60) / 100; // 0.80 - 1.39
+  const withDrift = price * factor;
+  return Math.round(withDrift * 100) / 100;
 }
 
 const portfoliosByUser: Record<string, DbPortfolio[]> = {
@@ -34,6 +50,7 @@ const portfoliosByUser: Record<string, DbPortfolio[]> = {
           quantity: 10,
           price: 780,
           purchasedAt: "2024-01-09",
+          currency: "PLN",
         },
         {
           id: "a2",
@@ -42,6 +59,7 @@ const portfoliosByUser: Record<string, DbPortfolio[]> = {
           quantity: 20,
           price: 1245,
           purchasedAt: "2024-02-15",
+          currency: "PLN",
         },
       ],
     },
@@ -57,6 +75,7 @@ const portfoliosByUser: Record<string, DbPortfolio[]> = {
           quantity: 4,
           price: 1700,
           purchasedAt: "2024-03-20",
+          currency: "PLN",
         },
         {
           id: "a4",
@@ -65,6 +84,7 @@ const portfoliosByUser: Record<string, DbPortfolio[]> = {
           quantity: 0.05,
           price: 68000,
           purchasedAt: "2024-04-10",
+          currency: "PLN",
         },
       ],
     },
@@ -137,6 +157,44 @@ export function updateAsset(
   const next: DbAsset = { ...p.assets[idx], ...patch };
   p.assets[idx] = next;
   return next;
+}
+
+export function getAsset(
+  userId: string,
+  portfolioId: string,
+  assetId: string,
+): DbAsset | null {
+  const p = getUserPortfolios(userId).find((x) => x.id === portfolioId);
+  if (!p) return null;
+  const asset = p.assets.find((a) => a.id === assetId);
+  return asset ? { ...asset } : null;
+}
+
+export function sellAsset(
+  userId: string,
+  portfolioId: string,
+  assetId: string,
+  quantity: number,
+): { removed: boolean; asset?: DbAsset } | null {
+  const p = getUserPortfolios(userId).find((x) => x.id === portfolioId);
+  if (!p) return null;
+
+  const idx = p.assets.findIndex((a) => a.id === assetId);
+  if (idx === -1) return null;
+
+  const asset = p.assets[idx];
+  if (!Number.isFinite(quantity) || quantity <= 0) return null;
+  if (quantity > asset.quantity) return null;
+
+  const nextQty = asset.quantity - quantity;
+  if (nextQty <= 0) {
+    p.assets = p.assets.filter((a) => a.id !== assetId);
+    return { removed: true };
+  }
+
+  const updated: DbAsset = { ...asset, quantity: nextQty };
+  p.assets[idx] = updated;
+  return { removed: false, asset: updated };
 }
 
 export function removeAsset(

@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { Link as RouterLink } from "react-router-dom";
+import { Logo } from "../UI/Logo";
 
 const screenshots = [
   {
@@ -77,11 +78,13 @@ export function PublicHomePage() {
   return (
     <Box>
       <Box
-        sx={{
+        sx={(theme) => ({
           background:
-            "linear-gradient(135deg, rgba(25,118,210,0.08), rgba(156,39,176,0.08))",
+            theme.palette.mode === "dark"
+              ? "linear-gradient(135deg, rgba(25,118,210,0.22), rgba(156,39,176,0.22))"
+              : "linear-gradient(135deg, rgba(25,118,210,0.08), rgba(156,39,176,0.08))",
           py: { xs: 6, md: 10 },
-        }}
+        })}
       >
         <Container maxWidth="lg">
           <Box
@@ -93,9 +96,13 @@ export function PublicHomePage() {
             }}
           >
             <Stack spacing={2}>
-              <Typography variant="h3" sx={{ fontWeight: 900 }}>
-                SmartInwestor
-              </Typography>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Logo size={64} radius={1} />
+                <Typography variant="h3" sx={{ fontWeight: 900 }}>
+                  SmartInwestor
+                </Typography>
+              </Stack>
+
               <Typography color="text.secondary" sx={{ fontSize: 18 }}>
                 Monitoruj portfele, analizuj ryzyko i podejmuj lepsze decyzje
                 inwestycyjne.
@@ -123,13 +130,14 @@ export function PublicHomePage() {
             </Stack>
 
             <Box
-              sx={{
+              sx={(theme) => ({
                 borderRadius: 4,
-                backgroundColor: "white",
+                backgroundColor: theme.palette.background.paper,
                 boxShadow: 3,
                 overflow: "hidden",
                 height: { xs: 240, md: 360 },
-              }}
+                border: `1px solid ${theme.palette.divider}`,
+              })}
             >
               <img
                 src="/assets/AppScreenshoots/dashboard.png"
@@ -176,7 +184,7 @@ export function PublicHomePage() {
         </Stack>
       </Container>
 
-      <Box sx={{ backgroundColor: "grey.50", py: { xs: 6, md: 8 } }}>
+      <Box sx={{ backgroundColor: "background.default", py: { xs: 6, md: 8 } }}>
         <Container maxWidth="lg">
           <Stack spacing={3}>
             <Typography variant="h4" sx={{ fontWeight: 900 }}>
@@ -224,14 +232,15 @@ export function PublicHomePage() {
             {screenshots.map((s) => (
               <Box
                 key={s.src}
-                sx={{
+                sx={(theme) => ({
                   borderRadius: 3,
                   p: 1,
-                  backgroundColor: "white",
+                  backgroundColor: theme.palette.background.paper,
                   boxShadow: 2,
                   overflow: "hidden",
                   cursor: "pointer",
-                }}
+                  border: `1px solid ${theme.palette.divider}`,
+                })}
                 onClick={() => handleOpen(s)}
                 aria-label={`Otwórz podgląd: ${s.alt}`}
                 role="button"
@@ -261,7 +270,7 @@ export function PublicHomePage() {
         </Stack>
       </Container>
 
-      <Box sx={{ py: { xs: 6, md: 8 }, backgroundColor: "grey.100" }}>
+      <Box sx={{ py: { xs: 6, md: 8 }, backgroundColor: "background.paper" }}>
         <Container maxWidth="lg">
           <Stack spacing={2} alignItems="center" textAlign="center">
             <Typography variant="h4" sx={{ fontWeight: 900 }}>

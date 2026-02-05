@@ -4,6 +4,7 @@ import { mapPortfolio } from "./mappers";
 import type {
   CreateAssetRequestDto,
   CreatePortfolioRequestDto,
+  SellAssetRequestDto,
   UpdateAssetRequestDto,
   UpdatePortfolioRequestDto,
 } from "../types";
@@ -114,6 +115,27 @@ export function useDeleteAssetMutation() {
       portfolioId: string;
       assetId: string;
     }) => portfoliosApi.deleteAsset(portfolioId, assetId),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["portfolios"] }),
+        qc.invalidateQueries({ queryKey: ["dashboard-summary"] }),
+      ]);
+    },
+  });
+}
+
+export function useSellAssetMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      portfolioId,
+      assetId,
+      body,
+    }: {
+      portfolioId: string;
+      assetId: string;
+      body: SellAssetRequestDto;
+    }) => portfoliosApi.sellAsset(portfolioId, assetId, body),
     onSuccess: async () => {
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["portfolios"] }),

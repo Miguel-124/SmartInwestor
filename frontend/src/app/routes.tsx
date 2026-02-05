@@ -16,6 +16,7 @@ import { TermsPage } from "../features/legal/pages/TermsPage";
 import { PublicNotFoundPage } from "../shared/pages/PublicNotFoundPage";
 import { PrivateNotFoundPage } from "../shared/pages/PrivateNotFoundPage";
 import { ChartsPage } from "../features/charts/pages/ChartsPage";
+import { ChartsPiePage } from "../features/charts/pages/ChartsPiePage";
 import { PublicHomePage } from "../shared/pages/PublicHomePage";
 
 export const router = createBrowserRouter([
@@ -44,6 +45,7 @@ export const router = createBrowserRouter([
       { path: "/profile/settings", element: <ProfileSettingsPage /> },
       { path: "*", element: <PrivateNotFoundPage /> },
       { path: "/charts", element: <ChartsPage /> },
+      { path: "/chartsPie", element: <ChartsPiePage /> },
       { path: "/profile/about", element: <ProfileAboutPage /> },
       { path: "/profile/help", element: <ProfileHelpPage /> },
       { path: "/profile/privacy", element: <PrivacyPolicyPage /> },

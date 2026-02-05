@@ -12,6 +12,8 @@ export type LoginResponseDto = {
   };
 };
 
+export type GoogleLoginResponseDto = LoginResponseDto;
+
 export type RegisterRequestDto = {
   firstName: string;
   lastName: string;
@@ -34,7 +36,7 @@ export type MeResponseDto = {
   firstName: string;
   lastName: string;
   email: string;
-  createdAt: string; // ISO
+  createdAt: string;
 };
 
 export type MeModel = {

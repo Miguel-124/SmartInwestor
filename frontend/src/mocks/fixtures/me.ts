@@ -7,4 +7,5 @@ export const meFixture = {
   birthDate: "1995-07-10",
   riskProfile: "balanced",
   acceptRisk: true,
+  baseCurrency: "USD",
 } as const;

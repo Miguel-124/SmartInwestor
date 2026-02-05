@@ -2,26 +2,33 @@ import React from "react";
 import {
   Alert,
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
   CircularProgress,
   Divider,
+  IconButton,
   LinearProgress,
   List,
   ListItem,
   ListItemText,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { useProfileQuery } from "../../profile/api/hooks";
 import { usePortfoliosQuery } from "../../portfolios/api/hooks";
 import { useAnalysisQuery } from "../api/hooks";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import { Link as RouterLink } from "react-router-dom";
+import { useFxRates, convertToBase } from "../../../shared/api/fxRates";
+import type { CurrencyCode } from "../../../shared/types/currency";
 
-function formatMoney(value: number) {
+function formatMoney(value: number, currency: string) {
   return new Intl.NumberFormat("pl-PL", {
     style: "currency",
-    currency: "PLN",
+    currency,
   }).format(value);
 }
 
@@ -47,23 +54,52 @@ export function AnalysisPage() {
   const profileQuery = useProfileQuery();
   const portfoliosQuery = usePortfoliosQuery();
 
+  const baseCurrency =
+    (profileQuery.data?.baseCurrency as CurrencyCode | undefined) ?? "USD";
+  const fxQuery = useFxRates(baseCurrency);
+
   const params = React.useMemo(() => {
     if (!profileQuery.data || !portfoliosQuery.data) return null;
+
+    const toBase = (amount: number, from: CurrencyCode) =>
+      convertToBase(amount, from, baseCurrency, fxQuery.data);
+
+    const portfoliosBase = portfoliosQuery.data.map((p) => {
+      const assets = p.assets.map((a) => ({
+        symbol: a.symbol,
+        name: a.name,
+        value: toBase(a.value, a.currency),
+      }));
+
+      const totalValue = assets.reduce((acc, a) => acc + a.value, 0);
+
+      return {
+        id: p.id,
+        name: p.name,
+        totalValue,
+        assets,
+      };
+    });
+
     return {
       riskProfile: profileQuery.data.riskProfile ?? "balanced",
-      portfolios: portfoliosQuery.data,
+      portfolios: portfoliosBase,
     };
-  }, [profileQuery.data, portfoliosQuery.data]);
+  }, [profileQuery.data, portfoliosQuery.data, baseCurrency, fxQuery.data]);
 
   const analysisQuery = useAnalysisQuery(params);
 
   const isLoading =
     profileQuery.isLoading ||
     portfoliosQuery.isLoading ||
-    analysisQuery.isLoading;
+    analysisQuery.isLoading ||
+    fxQuery.isLoading;
 
   const isError =
-    profileQuery.isError || portfoliosQuery.isError || analysisQuery.isError;
+    profileQuery.isError ||
+    portfoliosQuery.isError ||
+    analysisQuery.isError ||
+    fxQuery.isError;
 
   if (isLoading) {
     return (
@@ -79,6 +115,7 @@ export function AnalysisPage() {
       (profileQuery.error as Error | undefined)?.message ||
       (portfoliosQuery.error as Error | undefined)?.message ||
       (analysisQuery.error as Error | undefined)?.message ||
+      (fxQuery.error as Error | undefined)?.message ||
       "Nie udało się pobrać analizy.";
     return <Alert severity="error">{msg}</Alert>;
   }
@@ -101,14 +138,38 @@ export function AnalysisPage() {
 
   return (
     <Stack spacing={3} aria-label="Analysis page">
-      <Box>
-        <Typography variant="h4" sx={{ fontWeight: 900 }}>
-          Analiza portfela
-        </Typography>
-        <Typography color="text.secondary">
-          Wygenerowano: {new Date(data.generatedAt).toLocaleString("pl-PL")}
-        </Typography>
-      </Box>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
+        alignItems={{ sm: "center" }}
+        justifyContent="space-between"
+      >
+        <Box>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="h4" sx={{ fontWeight: 900 }}>
+              Analiza portfela
+            </Typography>
+            <Tooltip title="Wyniki i rekomendacje są wyliczane na podstawie profilu ryzyka i danych z portfeli.">
+              <IconButton size="small" aria-label="Pomoc: Analiza">
+                <HelpOutlineIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+          <Typography color="text.secondary">
+            Wygenerowano: {new Date(data.generatedAt).toLocaleString("pl-PL")}
+          </Typography>
+        </Box>
+
+        <Button
+          component={RouterLink}
+          to="/profile/help#instrukcja-analiza"
+          variant="outlined"
+          size="small"
+          aria-label="Instrukcja analizy"
+        >
+          Instrukcja
+        </Button>
+      </Stack>
 
       <Box
         sx={{
@@ -130,7 +191,7 @@ export function AnalysisPage() {
           <CardContent>
             <Typography color="text.secondary">Wartość portfela</Typography>
             <Typography variant="h6" sx={{ fontWeight: 800 }}>
-              {formatMoney(data.totalValue)}
+              {formatMoney(data.totalValue, baseCurrency)}
             </Typography>
           </CardContent>
         </Card>
@@ -176,9 +237,24 @@ export function AnalysisPage() {
       >
         <Card>
           <CardContent>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
-              Ekspozycja portfela
-            </Typography>
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{ mb: 1 }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                Ekspozycja portfela
+              </Typography>
+              <Tooltip title="Udział największych ekspozycji w portfelu. Pomaga wykryć koncentrację ryzyka.">
+                <IconButton
+                  size="small"
+                  aria-label="Pomoc: Ekspozycja portfela"
+                >
+                  <HelpOutlineIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
             <Stack spacing={1.5}>
               {data.topExposures.map((item) => (
                 <Box key={item.name}>
@@ -201,9 +277,16 @@ export function AnalysisPage() {
 
         <Card>
           <CardContent>
-            <Typography variant="h6" sx={{ fontWeight: 800 }}>
-              Rekomendacje
-            </Typography>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                Rekomendacje
+              </Typography>
+              <Tooltip title="Lista działań sugerowanych na podstawie profilu ryzyka i struktury portfela.">
+                <IconButton size="small" aria-label="Pomoc: Rekomendacje">
+                  <HelpOutlineIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
             <Divider sx={{ my: 1.5 }} />
             <Stack spacing={1.5} aria-label="Rekomendacje">
               {data.recommendations.map((rec) => (
@@ -243,9 +326,19 @@ export function AnalysisPage() {
       >
         <Card>
           <CardContent>
-            <Typography variant="h6" sx={{ fontWeight: 800 }}>
-              Sygnały i obserwacje
-            </Typography>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                Sygnały i obserwacje
+              </Typography>
+              <Tooltip title="Anomalie i wnioski z danych portfela, które mogą wymagać uwagi.">
+                <IconButton
+                  size="small"
+                  aria-label="Pomoc: Sygnały i obserwacje"
+                >
+                  <HelpOutlineIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
             <List aria-label="Sygnały">
               {data.insights.map((ins) => (
                 <ListItem key={ins.id} sx={{ px: 0 }}>
@@ -278,9 +371,16 @@ export function AnalysisPage() {
 
         <Card>
           <CardContent>
-            <Typography variant="h6" sx={{ fontWeight: 800 }}>
-              Symulacje stress test
-            </Typography>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                Symulacje stress test
+              </Typography>
+              <Tooltip title="Scenariusze testów warunków skrajnych i szacowany wpływ na portfel.">
+                <IconButton size="small" aria-label="Pomoc: Stress test">
+                  <HelpOutlineIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
             <List aria-label="Stress test">
               {data.stressTests.map((t) => (
                 <ListItem key={t.id} sx={{ px: 0 }}>

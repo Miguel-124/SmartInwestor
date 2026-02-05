@@ -41,7 +41,6 @@ describe("LoginPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Zaloguj" }));
 
-    // MSW zwraca token mock-token-123
     expect(setAuthTokenMock).toHaveBeenCalledWith("mock-token-123");
     expect(navigateMock).toHaveBeenCalledWith("/dashboard");
   });

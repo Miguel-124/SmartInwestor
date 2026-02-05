@@ -1,7 +1,7 @@
 export type OnboardingRiskProfile = "conservative" | "balanced" | "aggressive";
 
 export type OnboardingSubmitRequestDto = {
-  birthDate: string; // ISO: YYYY-MM-DD
+  birthDate: string;
   riskProfile: OnboardingRiskProfile;
   acceptRisk: boolean;
 };

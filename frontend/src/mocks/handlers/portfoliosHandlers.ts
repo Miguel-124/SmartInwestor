@@ -3,12 +3,16 @@ import { getUser } from "../db/usersDb";
 import {
   addAsset,
   createPortfolio,
+  getAsset,
+  getMockMarketPrice,
   listPortfolios,
   removeAsset,
   removePortfolio,
+  sellAsset,
   updateAsset,
   updatePortfolio,
 } from "../db/portfoliosDb";
+import { currencyCodes } from "../../shared/types/currency";
 
 type CreatePortfolioBody = { name?: string };
 type UpdatePortfolioBody = { name?: string };
@@ -19,9 +23,21 @@ type CreateAssetBody = {
   quantity?: number;
   price?: number;
   purchasedAt?: string;
+  currency?: "PLN" | "EUR" | "USD";
 };
 
 type UpdateAssetBody = Partial<CreateAssetBody>;
+
+type SellAssetBody = {
+  quantity?: number;
+  soldAt?: string;
+};
+
+type CurrencyCode = (typeof currencyCodes)[number];
+
+function isCurrencyCode(value: string): value is CurrencyCode {
+  return currencyCodes.includes(value as CurrencyCode);
+}
 
 function requireAuth(request: Request) {
   const auth =
@@ -38,7 +54,46 @@ export const portfoliosHandlers = [
     const unauthorized = requireAuth(request);
     if (unauthorized) return unauthorized;
 
-    return HttpResponse.json({ portfolios: listPortfolios(getUser().id) });
+    const portfolios = listPortfolios(getUser().id).map((p) => {
+      const assets = p.assets.map((a) => {
+        const marketPrice = getMockMarketPrice(a.symbol, a.price);
+        const marketValue = marketPrice * a.quantity;
+        const value = a.price * a.quantity;
+        const changeValue = marketValue - value;
+        const changePercent = value > 0 ? (changeValue / value) * 100 : 0;
+
+        return {
+          ...a,
+          marketPrice,
+          marketValue,
+          changeValue,
+          changePercent,
+        };
+      });
+
+      const totalValue = assets.reduce(
+        (acc, a) => acc + a.price * a.quantity,
+        0,
+      );
+      const totalMarketValue = assets.reduce(
+        (acc, a) => acc + (a.marketValue ?? a.price * a.quantity),
+        0,
+      );
+      const changeValue = totalMarketValue - totalValue;
+      const changePercent =
+        totalValue > 0 ? (changeValue / totalValue) * 100 : 0;
+
+      return {
+        ...p,
+        totalValue,
+        marketValue: totalMarketValue,
+        changeValue,
+        changePercent,
+        assets,
+      };
+    });
+
+    return HttpResponse.json({ portfolios });
   }),
 
   http.post("/api/portfolios", async ({ request }) => {
@@ -109,6 +164,7 @@ export const portfoliosHandlers = [
     const quantity = Number(body.quantity);
     const price = Number(body.price);
     const purchasedAt = body.purchasedAt?.trim();
+    const currency = body.currency ?? "PLN";
 
     if (!purchasedAt || !/^\d{4}-\d{2}-\d{2}$/.test(purchasedAt)) {
       return HttpResponse.json(
@@ -134,6 +190,12 @@ export const portfoliosHandlers = [
         { status: 400 },
       );
     }
+    if (!currencyCodes.includes(currency)) {
+      return HttpResponse.json(
+        { message: "Nieprawidłowa waluta" },
+        { status: 400 },
+      );
+    }
 
     const a = addAsset(getUser().id, portfolioId, {
       symbol,
@@ -141,6 +203,7 @@ export const portfoliosHandlers = [
       quantity,
       price,
       purchasedAt,
+      currency,
     });
     if (!a) return HttpResponse.json({ message: "Not found" }, { status: 404 });
 
@@ -164,10 +227,10 @@ export const portfoliosHandlers = [
       if (typeof body.quantity !== "undefined")
         patch.quantity = Number(body.quantity);
       if (typeof body.price !== "undefined") patch.price = Number(body.price);
+      if (typeof body.currency === "string") patch.currency = body.currency;
       if (typeof body.purchasedAt === "string")
         patch.purchasedAt = body.purchasedAt.trim();
 
-      // Walidacja po złożeniu patcha (jak w poprzedniej wersji)
       const nextSymbol =
         typeof patch.symbol === "string" ? patch.symbol : undefined;
       const nextName = typeof patch.name === "string" ? patch.name : undefined;
@@ -175,6 +238,8 @@ export const portfoliosHandlers = [
         typeof patch.quantity === "number" ? patch.quantity : undefined;
       const nextPrice =
         typeof patch.price === "number" ? patch.price : undefined;
+      const nextCurrency =
+        typeof patch.currency === "string" ? patch.currency : undefined;
       const nextPurchasedAt =
         typeof patch.purchasedAt === "string" ? patch.purchasedAt : undefined;
 
@@ -217,8 +282,13 @@ export const portfoliosHandlers = [
           { status: 400 },
         );
       }
+      if (nextCurrency !== undefined && !isCurrencyCode(nextCurrency)) {
+        return HttpResponse.json(
+          { message: "Nieprawidłowa waluta" },
+          { status: 400 },
+        );
+      }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updated = updateAsset(getUser().id, portfolioId, assetId, patch);
       if (!updated)
         return HttpResponse.json({ message: "Not found" }, { status: 404 });
@@ -240,4 +310,51 @@ export const portfoliosHandlers = [
 
     return HttpResponse.json({ ok: true });
   }),
+
+  http.post(
+    "/api/portfolios/:id/assets/:assetId/sell",
+    async ({ request, params }) => {
+      const unauthorized = requireAuth(request);
+      if (unauthorized) return unauthorized;
+
+      const portfolioId = String(params.id);
+      const assetId = String(params.assetId);
+
+      const body = (await request.json().catch(() => ({}))) as SellAssetBody;
+      const quantity = Number(body.quantity);
+      const soldAt = body.soldAt?.trim();
+
+      if (!soldAt || !/^\d{4}-\d{2}-\d{2}$/.test(soldAt)) {
+        return HttpResponse.json(
+          { message: "Data sprzedaży jest wymagana (YYYY-MM-DD)" },
+          { status: 400 },
+        );
+      }
+
+      if (!Number.isFinite(quantity) || quantity <= 0) {
+        return HttpResponse.json(
+          { message: "Ilość musi być > 0" },
+          { status: 400 },
+        );
+      }
+
+      const asset = getAsset(getUser().id, portfolioId, assetId);
+      if (!asset) {
+        return HttpResponse.json({ message: "Not found" }, { status: 404 });
+      }
+
+      if (quantity > asset.quantity) {
+        return HttpResponse.json(
+          { message: "Nie możesz sprzedać więcej niż posiadasz" },
+          { status: 400 },
+        );
+      }
+
+      const result = sellAsset(getUser().id, portfolioId, assetId, quantity);
+      if (!result)
+        return HttpResponse.json({ message: "Not found" }, { status: 404 });
+
+      return HttpResponse.json({ ok: true });
+    },
+  ),
 ];

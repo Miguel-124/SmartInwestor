@@ -1,9 +1,12 @@
 import {
   Alert,
   Box,
+  Button,
   Card,
   CircularProgress,
+  IconButton,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { useDashboardSummaryQuery } from "../api/hooks";
@@ -11,7 +14,13 @@ import { PortfolioPieChart } from "../components/PortfolioPieChart";
 import { PortfolioAssetsTable } from "../components/PortfolioAssetsTable";
 import { AssetsLineChart } from "../components/AssetsLineChart";
 import { useMeQuery } from "../../auth/api/useMeQuery";
-import { useNavigate } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import { useProfileQuery } from "../../profile/api/hooks";
+import { useFxRates, convertToBase } from "../../../shared/api/fxRates";
+import type { CurrencyCode } from "../../../shared/types/currency";
 
 import { CardActionArea } from "@mui/material";
 
@@ -23,10 +32,23 @@ function formatMoney(value: number, currency: string) {
 
 export function DashboardPage() {
   const meQuery = useMeQuery();
+  const profileQuery = useProfileQuery();
   const summaryQuery = useDashboardSummaryQuery();
 
-  const isLoading = meQuery.isLoading || summaryQuery.isLoading;
-  const isError = meQuery.isError || summaryQuery.isError;
+  const baseCurrency =
+    (profileQuery.data?.baseCurrency as CurrencyCode | undefined) ?? "USD";
+  const fxQuery = useFxRates(baseCurrency);
+
+  const isLoading =
+    meQuery.isLoading ||
+    summaryQuery.isLoading ||
+    profileQuery.isLoading ||
+    fxQuery.isLoading;
+  const isError =
+    meQuery.isError ||
+    summaryQuery.isError ||
+    profileQuery.isError ||
+    fxQuery.isError;
 
   const navigate = useNavigate();
 
@@ -48,6 +70,7 @@ export function DashboardPage() {
     const msg =
       (meQuery.error as Error | undefined)?.message ||
       (summaryQuery.error as Error | undefined)?.message ||
+      (fxQuery.error as Error | undefined)?.message ||
       "Nie udało się pobrać danych dashboardu.";
 
     return (
@@ -59,6 +82,53 @@ export function DashboardPage() {
 
   const me = meQuery.data!;
   const data = summaryQuery.data!;
+  const summaryCurrency = (data.currency as CurrencyCode) ?? "PLN";
+
+  const toBase = (amount: number) =>
+    convertToBase(amount, summaryCurrency, baseCurrency, fxQuery.data);
+
+  const displayTotalValue = toBase(data.totalValue);
+  const displayTotalMarketValue = toBase(data.totalMarketValue);
+  const displayChangeValue = displayTotalMarketValue - displayTotalValue;
+  const displayChangePercent =
+    displayTotalValue > 0 ? (displayChangeValue / displayTotalValue) * 100 : 0;
+  const displayPortfolios = data.portfolios.map((p) => ({
+    ...p,
+    totalValue: toBase(p.totalValue),
+    marketValue: toBase(p.marketValue),
+    assets: p.assets.map((a) => {
+      const baseValue = toBase(a.value);
+      const baseMarketValue = toBase(a.marketValue ?? a.value);
+      const changeValue = baseMarketValue - baseValue;
+      const changePercent = baseValue > 0 ? (changeValue / baseValue) * 100 : 0;
+
+      return {
+        ...a,
+        price: toBase(a.price),
+        value: baseValue,
+        marketPrice: toBase(a.marketPrice ?? a.price),
+        marketValue: baseMarketValue,
+        changeValue,
+        changePercent,
+      };
+    }),
+  }));
+  const displayPortfoliosWithChange = displayPortfolios.map((p) => {
+    const changeValue = p.marketValue - p.totalValue;
+    const changePercent =
+      p.totalValue > 0 ? (changeValue / p.totalValue) * 100 : 0;
+
+    return {
+      ...p,
+      changeValue,
+      changePercent,
+    };
+  });
+  const displayHistory = data.history.map((h) => ({
+    ...h,
+    totalValue: toBase(h.totalValue),
+    marketValue: toBase(h.marketValue ?? h.totalValue),
+  }));
 
   if (data.portfolios.length === 0) {
     return (
@@ -74,22 +144,70 @@ export function DashboardPage() {
     );
   }
 
-  const pieItems = data.portfolios.map((p) => ({
+  const pieItems = displayPortfoliosWithChange.map((p) => ({
     name: p.name,
     value: p.totalValue,
   }));
 
   return (
     <Stack spacing={3} aria-label="Dashboard page">
-      <Box>
-        <Typography variant="h4" sx={{ fontWeight: 950 }}>
-          Witaj, {me.firstName} 👋
-        </Typography>
-        <Typography color="text.secondary">
-          Łączna wartość aktywów:{" "}
-          <strong>{formatMoney(data.totalValue, data.currency)}</strong>
-        </Typography>
-      </Box>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
+        alignItems={{ sm: "center" }}
+        justifyContent="space-between"
+      >
+        <Box>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="h4" sx={{ fontWeight: 950 }}>
+              Witaj, {me.firstName} 👋
+            </Typography>
+            <Tooltip title="Podsumowanie wartości portfeli oraz kluczowe wskaźniki. Szczegóły w instrukcji.">
+              <IconButton size="small" aria-label="Pomoc: Dashboard">
+                <HelpOutlineIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+          <Typography color="text.secondary">
+            Łączna wartość aktywów:{" "}
+            <strong>{formatMoney(displayTotalValue, baseCurrency)}</strong>
+          </Typography>
+          <Typography color="text.secondary">
+            Wartość rynkowa:{" "}
+            <strong>
+              {formatMoney(displayTotalMarketValue, baseCurrency)}
+            </strong>
+          </Typography>
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            {displayChangeValue >= 0 ? (
+              <ArrowUpwardIcon sx={{ fontSize: 18, color: "success.main" }} />
+            ) : (
+              <ArrowDownwardIcon sx={{ fontSize: 18, color: "error.main" }} />
+            )}
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 700,
+                color: displayChangeValue >= 0 ? "success.main" : "error.main",
+              }}
+            >
+              {formatMoney(Math.abs(displayChangeValue), baseCurrency)} (
+              {Math.abs(displayChangePercent).toFixed(2)}
+              %)
+            </Typography>
+          </Stack>
+        </Box>
+
+        <Button
+          component={RouterLink}
+          to="/profile/help#instrukcja-dashboard"
+          variant="outlined"
+          size="small"
+          aria-label="Instrukcja dashboardu"
+        >
+          Instrukcja
+        </Button>
+      </Stack>
 
       <Box
         sx={{
@@ -99,20 +217,28 @@ export function DashboardPage() {
           alignItems: "stretch",
         }}
       >
-        <PortfolioPieChart items={pieItems} currency={data.currency} />
+        <Card sx={{ borderRadius: 2 }}>
+          <CardActionArea
+            onClick={() => navigate("/chartsPie")}
+            aria-label="Otwórz szczegółowe wykresy"
+          >
+            <PortfolioPieChart items={pieItems} currency={baseCurrency} />
+          </CardActionArea>
+        </Card>
+
         <Card sx={{ borderRadius: 2 }}>
           <CardActionArea
             onClick={() => navigate("/charts")}
             aria-label="Otwórz szczegółowe wykresy"
           >
-            <AssetsLineChart history={data.history} currency={data.currency} />
+            <AssetsLineChart history={displayHistory} currency={baseCurrency} />
           </CardActionArea>
         </Card>
       </Box>
 
       <PortfolioAssetsTable
-        portfolios={data.portfolios}
-        currency={data.currency}
+        portfolios={displayPortfoliosWithChange}
+        currency={baseCurrency}
       />
     </Stack>
   );

@@ -1,3 +1,5 @@
+import type { CurrencyCode } from "../../shared/types/currency";
+
 export type RiskProfile = "conservative" | "balanced" | "aggressive";
 
 export type ProfileResponseDto = {
@@ -5,10 +7,11 @@ export type ProfileResponseDto = {
   firstName: string;
   lastName: string;
   email: string;
-  createdAt: string; // ISO
-  birthDate?: string | null; // ISO: YYYY-MM-DD
+  createdAt: string;
+  birthDate?: string | null;
   riskProfile?: RiskProfile | null;
   acceptRisk?: boolean | null;
+  baseCurrency?: CurrencyCode | null;
 };
 
 export type ProfileModel = {
@@ -20,6 +23,7 @@ export type ProfileModel = {
   birthDate?: string;
   riskProfile?: RiskProfile;
   acceptRisk?: boolean;
+  baseCurrency?: CurrencyCode;
 };
 
 export type UpdateProfileRequestDto = {
@@ -29,4 +33,10 @@ export type UpdateProfileRequestDto = {
   birthDate: string;
   riskProfile: RiskProfile;
   acceptRisk: boolean;
+  baseCurrency: CurrencyCode;
+};
+
+export type ChangePasswordRequestDto = {
+  currentPassword: string;
+  newPassword: string;
 };

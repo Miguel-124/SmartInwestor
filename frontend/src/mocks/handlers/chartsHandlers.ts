@@ -1,5 +1,5 @@
 import { http, HttpResponse } from "msw";
-import { listPortfolios } from "../db/portfoliosDb";
+import { getMockMarketPrice, listPortfolios } from "../db/portfoliosDb";
 import { getUser } from "../db/usersDb";
 
 function isIsoDateString(v: string) {
@@ -31,10 +31,6 @@ function subtractMonthsUTC(d: Date, months: number) {
   return x;
 }
 
-/**
- * Generuje maks. `points` dat równomiernie rozłożonych między start a end (włącznie).
- * Punkty są "stałe" (jeśli brak zmian, wartości się nie zmieniają).
- */
 function buildEvenTimeline(start: Date, end: Date, points: number): string[] {
   const s = start.getTime();
   const e = end.getTime();
@@ -44,14 +40,12 @@ function buildEvenTimeline(start: Date, end: Date, points: number): string[] {
   for (let i = 0; i < points; i++) {
     const t = s + (i * (e - s)) / (points - 1);
     const d = new Date(t);
-    // zaokrąglenie do dnia UTC
     const day = new Date(
       Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
     );
     out.push(toIsoDate(day));
   }
 
-  // dedupe + sort
   return Array.from(new Set(out)).sort((a, b) => +toUtcDate(a) - +toUtcDate(b));
 }
 
@@ -77,12 +71,30 @@ export const chartsHandlers = [
     const db = listPortfolios(getUser().id);
 
     const portfolios = db.map((p) => {
-      const assets = p.assets.map((a) => ({
-        ...a,
-        value: a.quantity * a.price,
-      }));
+      const assets = p.assets.map((a) => {
+        const value = a.quantity * a.price;
+        const marketPrice = getMockMarketPrice(a.symbol, a.price);
+        const marketValue = marketPrice * a.quantity;
+
+        return {
+          ...a,
+          value,
+          marketPrice,
+          marketValue,
+        };
+      });
       const totalValue = assets.reduce((acc, a) => acc + a.value, 0);
-      return { id: p.id, name: p.name, totalValue, assets };
+      const totalMarketValue = assets.reduce(
+        (acc, a) => acc + a.marketValue,
+        0,
+      );
+      return {
+        id: p.id,
+        name: p.name,
+        totalValue,
+        marketValue: totalMarketValue,
+        assets,
+      };
     });
 
     const allAssets = portfolios.flatMap((p) =>
@@ -90,11 +102,15 @@ export const chartsHandlers = [
         .filter((a) => isIsoDateString(a.purchasedAt))
         .map((a) => ({ purchasedAt: a.purchasedAt, value: a.value })),
     );
+    const allMarketAssets = portfolios.flatMap((p) =>
+      p.assets
+        .filter((a) => isIsoDateString(a.purchasedAt))
+        .map((a) => ({ purchasedAt: a.purchasedAt, value: a.marketValue })),
+    );
 
     const todayIso = toIsoDate(new Date());
     const today = toUtcDate(todayIso);
 
-    // start = najwcześniejsza data zakupu (ignorujemy przyszłość)
     const minPurchaseIso =
       allAssets
         .map((a) => a.purchasedAt)
@@ -103,7 +119,6 @@ export const chartsHandlers = [
 
     let start = toUtcDate(minPurchaseIso);
 
-    // zakres: 6m / 12m / all (ale nie wcześniej niż pierwszy zakup)
     if (range === "6m") {
       const r = subtractMonthsUTC(today, 6);
       if (r > start) start = r;
@@ -117,6 +132,7 @@ export const chartsHandlers = [
     const totalHistory = timeline.map((date) => ({
       date,
       totalValue: Math.round(calcValueAtDate(allAssets, date)),
+      marketValue: Math.round(calcValueAtDate(allMarketAssets, date)),
     }));
 
     const portfolioHistories = portfolios.map((p) => {
@@ -124,12 +140,56 @@ export const chartsHandlers = [
         .filter((a) => isIsoDateString(a.purchasedAt))
         .map((a) => ({ purchasedAt: a.purchasedAt, value: a.value }));
 
+      const marketAssets = p.assets
+        .filter((a) => isIsoDateString(a.purchasedAt))
+        .map((a) => ({ purchasedAt: a.purchasedAt, value: a.marketValue }));
+
       const history = timeline.map((date) => ({
         date,
         totalValue: Math.round(calcValueAtDate(assets, date)),
+        marketValue: Math.round(calcValueAtDate(marketAssets, date)),
       }));
 
-      return { id: p.id, name: p.name, history };
+      const assetsSeries = p.assets.map((asset) => {
+        if (!isIsoDateString(asset.purchasedAt)) {
+          return {
+            id: asset.id,
+            symbol: asset.symbol,
+            name: asset.name,
+            history: timeline.map((date) => ({
+              date,
+              totalValue: 0,
+              marketValue: 0,
+            })),
+          };
+        }
+
+        const purchased = toUtcDate(asset.purchasedAt);
+        const baseValue = asset.value;
+        const baseMarketValue = asset.marketValue;
+
+        const assetHistory = timeline.map((date) => {
+          const pointDate = toUtcDate(date);
+          if (purchased <= pointDate) {
+            return {
+              date,
+              totalValue: Math.round(baseValue),
+              marketValue: Math.round(baseMarketValue),
+            };
+          }
+
+          return { date, totalValue: 0, marketValue: 0 };
+        });
+
+        return {
+          id: asset.id,
+          symbol: asset.symbol,
+          name: asset.name,
+          history: assetHistory,
+        };
+      });
+
+      return { id: p.id, name: p.name, history, assets: assetsSeries };
     });
 
     return HttpResponse.json(

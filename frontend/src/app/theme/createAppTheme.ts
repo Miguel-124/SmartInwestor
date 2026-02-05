@@ -28,6 +28,22 @@ export function createAppTheme(mode: PaletteMode): Theme {
       },
     },
     components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          body: {
+            backgroundImage: isDark
+              ? 'url("/assets/bg_dark.jpg")'
+              : 'url("/assets/bg_light.jpg")',
+            backgroundSize: "cover",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "center",
+            backgroundAttachment: "fixed",
+          },
+          "#root": {
+            minHeight: "100vh",
+          },
+        },
+      },
       MuiButton: {
         defaultProps: { disableElevation: true },
       },

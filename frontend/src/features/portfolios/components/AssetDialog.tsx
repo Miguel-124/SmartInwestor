@@ -6,11 +6,13 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  MenuItem,
   Stack,
   TextField,
 } from "@mui/material";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { currencyCodes } from "../../../shared/types/currency";
 
 const toNumber = (v: unknown) => {
   if (typeof v === "number") return v;
@@ -27,6 +29,9 @@ const schema = z.object({
   name: z.string().trim().min(1, "Nazwa jest wymagana"),
   quantity: z.preprocess(toNumber, z.number().positive("Ilość musi być > 0")),
   price: z.preprocess(toNumber, z.number().min(0, "Cena nie może być ujemna")),
+  currency: z.enum(currencyCodes, {
+    message: "Wybierz walutę",
+  }),
   purchasedAt: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Podaj datę w formacie RRRR-MM-DD"),
@@ -65,6 +70,7 @@ export function AssetDialog({
       name: initialValues?.name ?? "",
       quantity: initialValues?.quantity ?? 1,
       price: initialValues?.price ?? 0,
+      currency: initialValues?.currency ?? "PLN",
       purchasedAt:
         initialValues?.purchasedAt ?? new Date().toISOString().slice(0, 10),
     } as FormInput,
@@ -77,6 +83,7 @@ export function AssetDialog({
       name: initialValues?.name ?? "",
       quantity: initialValues?.quantity ?? 1,
       price: initialValues?.price ?? 0,
+      currency: initialValues?.currency ?? "PLN",
       purchasedAt:
         initialValues?.purchasedAt ?? new Date().toISOString().slice(0, 10),
     } as FormInput);
@@ -91,6 +98,7 @@ export function AssetDialog({
           name: initialValues?.name ?? "",
           quantity: initialValues?.quantity ?? 1,
           price: initialValues?.price ?? 0,
+          currency: initialValues?.currency ?? "PLN",
         });
         onClose();
       }}
@@ -143,6 +151,21 @@ export function AssetDialog({
                 {...register("price")}
               />
               <TextField
+                select
+                label="Waluta"
+                error={!!errors.currency}
+                helperText={errors.currency?.message}
+                inputProps={{ "aria-label": "Waluta" }}
+                fullWidth
+                {...register("currency")}
+              >
+                {currencyCodes.map((code) => (
+                  <MenuItem key={code} value={code}>
+                    {code}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
                 label="Data zakupu"
                 type="date"
                 InputLabelProps={{ shrink: true }}
@@ -164,6 +187,7 @@ export function AssetDialog({
               name: initialValues?.name ?? "",
               quantity: initialValues?.quantity ?? 1,
               price: initialValues?.price ?? 0,
+              currency: initialValues?.currency ?? "PLN",
               purchasedAt:
                 initialValues?.purchasedAt ??
                 new Date().toISOString().slice(0, 10),
