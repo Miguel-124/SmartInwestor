@@ -114,6 +114,37 @@ export function ProfileHelpPage() {
     <ProfileShell title="Pomoc">
       <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }}>
         <Stack spacing={3}>
+          <Card sx={{ borderRadius: 2 }}>
+            <CardContent>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={2}
+                alignItems={{ sm: "center" }}
+                justifyContent="space-between"
+              >
+                <Stack spacing={0.5}>
+                  <Typography variant="h6" sx={{ fontWeight: 900 }}>
+                    Dokumentacja użytkownika (PDF)
+                  </Typography>
+                  <Typography color="text.secondary">
+                    Pobierz pełny przewodnik użytkownika w formacie PDF.
+                  </Typography>
+                </Stack>
+                <Button
+                  component="a"
+                  href="/assets/Documentation/DokumentacjaUżytkownika.pdf"
+                  target="_blank"
+                  rel="noreferrer"
+                  variant="contained"
+                  sx={{ fontWeight: 800, whiteSpace: "nowrap" }}
+                  aria-label="Otwórz dokumentację użytkownika"
+                >
+                  Otwórz dokumentację
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
+
           {/* INSTRUKCJA */}
           <Stack spacing={2}>
             <Typography variant="h6" sx={{ fontWeight: 900 }}>

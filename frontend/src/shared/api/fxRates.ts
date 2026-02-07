@@ -17,23 +17,35 @@ export async function fetchFxRates(base: CurrencyCode): Promise<FxRates> {
     return { base, rates: { [base]: 1 } as Record<CurrencyCode, number> };
   }
 
-  const res = await fetch(
-    `https://api.frankfurter.app/latest?from=${base}&to=${targets}`,
-  );
+  try {
+    const res = await fetch(
+      `https://api.frankfurter.app/latest?from=${base}&to=${targets}`,
+    );
 
-  if (!res.ok) {
-    throw new Error("Nie udało się pobrać kursów walut.");
+    if (!res.ok) {
+      throw new Error("Nie udało się pobrać kursów walut.");
+    }
+
+    const data = (await res.json()) as FrankfurterResponse;
+    const rates = {
+      [base]: 1,
+      ...Object.fromEntries(
+        Object.entries(data.rates).map(([code, value]) => [
+          code,
+          Number(value),
+        ]),
+      ),
+    } as Record<CurrencyCode, number>;
+
+    return { base, rates };
+  } catch {
+    return {
+      base,
+      rates: currencyCodes.reduce((acc, code) => ({ ...acc, [code]: 1 }), {
+        [base]: 1,
+      } as Record<CurrencyCode, number>),
+    };
   }
-
-  const data = (await res.json()) as FrankfurterResponse;
-  const rates = {
-    [base]: 1,
-    ...Object.fromEntries(
-      Object.entries(data.rates).map(([code, value]) => [code, Number(value)]),
-    ),
-  } as Record<CurrencyCode, number>;
-
-  return { base, rates };
 }
 
 export function convertToBase(
