@@ -14,7 +14,19 @@ export async function httpClient<TResponse>(
     (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
   const token = getAuthToken();
 
-  const res = await fetch(`${baseUrl}${path}`, {
+  const normalizeUrl = (base: string, nextPath: string) => {
+    if (!base) return nextPath;
+    const baseTrimmed = base.endsWith("/") ? base.slice(0, -1) : base;
+    const pathTrimmed = nextPath.startsWith("/") ? nextPath : `/${nextPath}`;
+
+    if (baseTrimmed.endsWith("/api") && pathTrimmed.startsWith("/api/")) {
+      return `${baseTrimmed}${pathTrimmed.replace("/api", "")}`;
+    }
+
+    return `${baseTrimmed}${pathTrimmed}`;
+  };
+
+  const res = await fetch(normalizeUrl(baseUrl, path), {
     method: options?.method ?? "GET",
     headers: {
       "Content-Type": "application/json",
