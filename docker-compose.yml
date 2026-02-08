@@ -44,17 +44,19 @@ services:
     build:
       context: ./mobile
       dockerfile: Dockerfile
+    tty: true            # <--- KLUCZOWE: Włącza emulację terminala (pozwala rysować kod QR)
+    stdin_open: true      # <--- Pozwala na interakcję (np. naciskanie klawiszy w logach)
     ports:
-      - "8081:8081" # Metro Bundler
-      - "19000:19000" # Expo port
+      - "8081:8081"
+      - "19000:19000"
       - "19001:19001"
     volumes:
       - ./mobile:/app
       - /app/node_modules
     environment:
       - EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
-      - REACT_NATIVE_PACKAGER_HOSTNAME=192.168.100.155
-    command: npx expo start --tunnel # Tunnel pomaga przy problemach z siecią lokalną
+      - REACT_NATIVE_PACKAGER_HOSTNAME=192.168.100.155 # Upewnij się, że to Twoje IP lokalne!
+    command: npx expo start --tunnel
 
 volumes:
   db_data:

@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     "portfolios",
     "transactions",
     "prices",
+    "ai_advisor",
+    "langchain",
 ]
 
 MIDDLEWARE = [

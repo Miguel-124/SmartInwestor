@@ -23,4 +23,5 @@ urlpatterns = [
     path('/', include('portfolios.urls')),
     path('/', include('transactions.urls')),
     path('/', include('prices.urls')),
+    path('api/ai/', include('ai_advisor.urls')),
 ]
