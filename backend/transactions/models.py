@@ -21,6 +21,11 @@ class Transaction(models.Model):
     fee = models.DecimalField(max_digits=20, decimal_places=8, default=0)
     executed_at = models.DateTimeField()
     note = models.CharField(max_length=255, blank=True, null=True)
+    asset_type = models.CharField(
+        max_length=10,
+        choices=[("stock", "Stock"), ("crypto", "Crypto")],
+        default="stock",
+    )
 
     # Kluczowe: M2M do portfeli
     portfolios = models.ManyToManyField(

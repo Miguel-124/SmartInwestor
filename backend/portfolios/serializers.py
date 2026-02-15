@@ -3,9 +3,10 @@ from rest_framework import serializers
 from .models import Portfolio
 
 class PortfolioListSerializer(serializers.ModelSerializer):
+    is_main = serializers.ReadOnlyField()
     class Meta:
         model = Portfolio
-        fields = ["id", "name", "created_at"]
+        fields = ["id", "name", "created_at", "is_main"]
 
 
 class PortfolioCreateSerializer(serializers.ModelSerializer):
@@ -17,21 +18,23 @@ class PortfolioCreateSerializer(serializers.ModelSerializer):
         }
         
     def validate_name(self, value):
+        value = value.strip()
+        if value.lower() == Portfolio.MAIN_PORTFOLIO_NAME.lower():
+            raise serializers.ValidationError("Nazwa „Main” jest zarezerwowana dla portfela systemowego.")
         user = self.context["request"].user
-        # walidacja case-insensitive per owner (mamy też constraint w bazie)
-        if Portfolio.objects.filter(owner=user, name__iexact=value.strip()).exists():
+        if Portfolio.objects.filter(owner=user, name__iexact=value).exists():
             raise serializers.ValidationError("Masz już portfel o takiej nazwie.")
-        return value.strip()
+        return value
 
 
 class PortfolioDetailSerializer(serializers.ModelSerializer):
-    # Agregowane pozycje z transakcji przypiętych do tego portfela
     positions = serializers.SerializerMethodField()
     positions_count = serializers.SerializerMethodField()
+    is_main = serializers.ReadOnlyField()
 
     class Meta:
         model = Portfolio
-        fields = ["id", "name", "created_at", "positions_count", "positions"]
+        fields = ["id", "name", "created_at", "is_main", "positions_count", "positions"]
 
     def get_positions_count(self, obj):
         """

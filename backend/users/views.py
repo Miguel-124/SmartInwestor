@@ -36,7 +36,7 @@ class GoogleLoginView(APIView):
                 if picture and not user.avatar_url:
                     user.avatar_url = picture
                 user.save()
-            Portfolio.ensure_all_for(user)
+            Portfolio.ensure_main_for(user)
 
             refresh = RefreshToken.for_user(user)
             return Response({
@@ -59,7 +59,7 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            Portfolio.ensure_all_for(user)
+            Portfolio.ensure_main_for(user)
             refresh = RefreshToken.for_user(user)
             return Response({
                 "access": str(refresh.access_token),
@@ -74,7 +74,7 @@ class LoginView(APIView):
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        Portfolio.ensure_all_for(serializer.user)
+        Portfolio.ensure_main_for(serializer.user)
         return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 

@@ -30,14 +30,22 @@ class Portfolio(models.Model):
     def __str__(self):
         return f"{self.name} ({self.owner.email})"
 
+    MAIN_PORTFOLIO_NAME = "Main"
+
     @property
-    def is_all(self) -> bool:
-        # przyjęta konwencja nazwy systemowego portfela
-        return self.name.strip().lower() == "all"
-    
-    
+    def is_main(self) -> bool:
+        """Portfel Main zawiera wszystkie transakcje i nie da się go usunąć."""
+        return self.name.strip().lower() == self.MAIN_PORTFOLIO_NAME.lower()
+
     @classmethod
-    def ensure_all_for(cls, user):
-        """Zwraca portfel ALL, tworząc go jeśli trzeba."""
-        obj, _ = cls.objects.get_or_create(owner=user, name="ALL")
-        return obj
+    def ensure_main_for(cls, user):
+        """Zwraca portfel Main, tworząc go jeśli trzeba. Main ma każdą transakcję."""
+        obj = cls.objects.filter(owner=user, name__iexact=cls.MAIN_PORTFOLIO_NAME).first()
+        if obj:
+            return obj
+        old_all = cls.objects.filter(owner=user, name__iexact="ALL").first()
+        if old_all:
+            old_all.name = cls.MAIN_PORTFOLIO_NAME
+            old_all.save()
+            return old_all
+        return cls.objects.create(owner=user, name=cls.MAIN_PORTFOLIO_NAME)

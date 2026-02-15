@@ -28,13 +28,23 @@ export const ChatAdvisor = () => {
     try {
       const token = localStorage.getItem('accessToken');
       const res = await axios.post(
-        'http://127.0.0.1:8000/ai/chat/', 
+        'http://127.0.0.1:8000/api/ai/chat/',
         { query: userMsg.content },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 180000, // 3 min – backend przy 429 czeka i ponawia (2× ~30 s) + wolna odpowiedź Gemini
+        }
       );
       setMessages(prev => [...prev, { role: 'ai', content: res.data.response }]);
-    } catch {
-      setMessages(prev => [...prev, { role: 'ai', content: 'Błąd połączenia z doradcą.' }]);
+    } catch (err: unknown) {
+      let msg = 'Błąd połączenia z doradcą.';
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) msg = 'Zaloguj się, aby korzystać z doradcy.';
+        else if (err.response?.status === 500) msg = 'Błąd serwera doradcy. Sprawdź konsolę backendu.';
+        else if (err.code === 'ECONNABORTED') msg = 'Przekroczono czas oczekowania. Spróbuj ponownie.';
+        else if (err.response?.data?.response) msg = String(err.response.data.response);
+      }
+      setMessages(prev => [...prev, { role: 'ai', content: msg }]);
     } finally {
       setIsLoading(false);
     }

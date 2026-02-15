@@ -1,7 +1,11 @@
+import logging
 from rest_framework import serializers
 from django.utils import timezone
 from portfolios.models import Portfolio
 from .models import Transaction, TransactionPortfolio
+
+logger = logging.getLogger(__name__)
+
 
 class TransactionSerializer(serializers.ModelSerializer):
     # Przekazujemy/zwrotnie pokazujemy listę ID portfeli
@@ -9,7 +13,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         child=serializers.IntegerField(min_value=1),
         write_only=True,
         required=False,
-        help_text="Lista ID portfeli, do których ma należeć transakcja. ALL zostanie dodany automatycznie."
+        help_text="Lista ID portfeli, do których ma należeć transakcja. Main zostanie dodany automatycznie."
     )
     portfolios = serializers.SerializerMethodField(read_only=True)
 
@@ -17,7 +21,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         model = Transaction
         fields = [
             "id", "symbol", "side", "quantity", "price", "fee", "executed_at", "note",
-            "portfolio_ids", "portfolios", "created_at"
+            "asset_type", "portfolio_ids", "portfolios", "created_at"
         ]
         read_only_fields = ("created_at",)
 
@@ -37,15 +41,12 @@ class TransactionSerializer(serializers.ModelSerializer):
             pass
         return attrs
 
-    def _get_or_create_all_portfolio(self, user):
-        p = Portfolio.objects.filter(owner=user, name__iexact="ALL").first()
-        if not p:
-            p = Portfolio.objects.create(owner=user, name="ALL")
-        return p
+    def _get_or_create_main_portfolio(self, user):
+        return Portfolio.ensure_main_for(user)
 
     def _validate_and_prepare_portfolios(self, user, portfolio_ids):
         """
-        Zwraca finalną listę portfeli (zawsze zawiera ALL).
+        Zwraca finalną listę portfeli (zawsze zawiera Main).
         Waliduje, że wszystkie należą do usera.
         """
         portfolios = []
@@ -54,9 +55,9 @@ class TransactionSerializer(serializers.ModelSerializer):
             if len(portfolios) != len(set(portfolio_ids)):
                 raise serializers.ValidationError({"portfolio_ids": "Nie znaleziono jednego z portfeli albo nie należy do Ciebie."})
 
-        all_portfolio = self._get_or_create_all_portfolio(user)
-        if all_portfolio not in portfolios:
-            portfolios.append(all_portfolio)
+        main_portfolio = self._get_or_create_main_portfolio(user)
+        if main_portfolio not in portfolios:
+            portfolios.append(main_portfolio)
         return portfolios
 
     def get_portfolios(self, obj):
@@ -69,11 +70,15 @@ class TransactionSerializer(serializers.ModelSerializer):
 
         portfolio_ids = validated_data.pop("portfolio_ids", None)
         portfolios = self._validate_and_prepare_portfolios(user, portfolio_ids)
+        validated_data.setdefault("asset_type", "stock")
 
-        tx = Transaction.objects.create(owner=user, **validated_data)
-        # Ustawiamy M2M przez through, ale prościej: add(*portfolios)
-        tx.portfolios.add(*portfolios)
-        return tx
+        try:
+            tx = Transaction.objects.create(owner=user, **validated_data)
+            tx.portfolios.add(*portfolios)
+            return tx
+        except Exception as e:
+            logger.exception("Transaction create failed")
+            raise serializers.ValidationError({"detail": str(e)})
 
     def update(self, instance, validated_data):
         request = self.context["request"]
@@ -86,7 +91,7 @@ class TransactionSerializer(serializers.ModelSerializer):
             setattr(instance, field, value)
         instance.save()
 
-        # Jeśli klient podał portfolio_ids w PATCH/PUT → nadpisujemy zestaw portfeli (z zachowaniem ALL)
+        # Jeśli klient podał portfolio_ids w PATCH/PUT → nadpisujemy zestaw portfeli (z zachowaniem Main)
         if portfolio_ids is not None:
             portfolios = self._validate_and_prepare_portfolios(user, portfolio_ids)
             instance.portfolios.set(portfolios)
