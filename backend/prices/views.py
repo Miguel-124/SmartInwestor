@@ -66,12 +66,14 @@ class IndicatorsView(APIView):
         vs = (request.query_params.get("vs") or "usd").lower()
         try:
             days = int(request.query_params.get("days", "30"))
-            ema_fast_n = int(request.query_params.get("ema_fast", "12"))
-            ema_slow_n = int(request.query_params.get("ema_slow", "26"))
-            rsi_period = int(request.query_params.get("rsi_period", "14"))
+            # Dla 1–2 dni API zwraca ~24 punkty (co godzinę) – używamy krótszych okresów
+            default_fast, default_slow, default_rsi = (5, 10, 7) if days <= 2 else (12, 26, 14)
+            ema_fast_n = int(request.query_params.get("ema_fast", str(default_fast)))
+            ema_slow_n = int(request.query_params.get("ema_slow", str(default_slow)))
+            rsi_period = int(request.query_params.get("rsi_period", str(default_rsi)))
         except (TypeError, ValueError):
-            ema_fast_n, ema_slow_n, rsi_period = 12, 26, 14
             days = 30
+            ema_fast_n, ema_slow_n, rsi_period = 12, 26, 14
 
         cache_key = f"ind:{symbol}:{vs}:{days}:{ema_fast_n}:{ema_slow_n}:{rsi_period}"
         data = cache.get(cache_key)
@@ -120,12 +122,18 @@ class IndicatorsView(APIView):
 
 class SentimentView(APIView):
     """
-    Analiza sentymentu (stub). GET /api/prices/sentiment?symbol=BTC
-    Docelowo: NLP / media społecznościowe (np. X).
+    Analiza sentymentu na podstawie nagłówków z internetu (Google News RSS).
+    GET /api/prices/sentiment?symbol=BTC
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         symbol = (request.query_params.get("symbol") or "BTC").upper()
+        cache_key = f"sent:{symbol}"
+        data = cache.get(cache_key)
+        if data is not None:
+            return Response(data)
         from .services.sentiment import get_sentiment_for_symbol
-        return Response(get_sentiment_for_symbol(symbol))
+        data = get_sentiment_for_symbol(symbol)
+        cache.set(cache_key, data, 900)  # 15 min
+        return Response(data)

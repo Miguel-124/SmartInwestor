@@ -117,6 +117,24 @@ export default function App() {
     rsi_period: number;
   } | null>(null);
 
+  // Sentyment z internetu (nagłówki z wyszukiwarki)
+  const [sentSymbol, setSentSymbol] = useState('BTC');
+  const [sentLoading, setSentLoading] = useState(false);
+  const [sentError, setSentError] = useState<string | null>(null);
+  const [sentData, setSentData] = useState<{
+    symbol: string;
+    status: string;
+    sentiment_score: number | null;
+    sentiment_label: string | null;
+    summary: string | null;
+    message?: string;
+    headlines_count?: number;
+    positive_count?: number;
+    negative_count?: number;
+    neutral_count?: number;
+    headlines?: { title: string; sentiment_score: number; sentiment_label: string; source?: string }[];
+  } | null>(null);
+
   // Auto-scroll czatu
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -382,6 +400,33 @@ export default function App() {
     }
   };
 
+  const fetchSentiment = async () => {
+    setSentError(null);
+    setSentLoading(true);
+    const token = localStorage.getItem('accessToken');
+    try {
+      const res = await axios.get(
+        'http://127.0.0.1:8000/api/prices/sentiment',
+        {
+          params: { symbol: sentSymbol.toUpperCase() },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setSentData(res.data);
+    } catch (e) {
+      if (axios.isAxiosError(e) && e.response?.data?.detail) {
+        setSentError(e.response.data.detail);
+      } else if (axios.isAxiosError(e) && e.response?.data?.message) {
+        setSentError(e.response.data.message);
+      } else {
+        setSentError('Nie udało się pobrać sentymentu.');
+      }
+      setSentData(null);
+    } finally {
+      setSentLoading(false);
+    }
+  };
+
   // --- RENDEROWANIE ---
 
   // Widok po zalogowaniu
@@ -576,6 +621,10 @@ export default function App() {
               onChange={e => setTaDays(Number(e.target.value))}
               style={{ ...styles.input, width: 100 }}
             >
+              <option value={1}>1 dzień</option>
+              <option value={2}>2 dni</option>
+              <option value={3}>3 dni</option>
+              <option value={7}>7 dni</option>
               <option value={14}>14 dni</option>
               <option value={30}>30 dni</option>
               <option value={60}>60 dni</option>
@@ -651,6 +700,71 @@ export default function App() {
                 </ResponsiveContainer>
               </div>
             </>
+          )}
+        </div>
+
+        {/* --- SENTYMENT Z INTERNETU --- */}
+        <div style={{ marginTop: 30 }}>
+          <h3>Sentyment z internetu</h3>
+          <p style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>
+            Analiza nagłówków z wyszukiwarki (Google News) – pozytywne / negatywne / neutralne.
+          </p>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+            <input
+              value={sentSymbol}
+              onChange={e => setSentSymbol(e.target.value.toUpperCase())}
+              placeholder="Symbol (np. BTC, AAPL)"
+              style={{ ...styles.input, width: 140 }}
+            />
+            <button onClick={fetchSentiment} disabled={sentLoading} style={styles.primaryBtn}>
+              {sentLoading ? 'Pobieram…' : 'Pobierz sentyment'}
+            </button>
+          </div>
+          {sentError && <p style={{ color: '#ff4444', fontSize: 14, marginBottom: 8 }}>{sentError}</p>}
+          {sentData && sentData.status === 'ok' && (
+            <div style={{ padding: 16, backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: 12, maxWidth: 700 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
+                <span style={{ color: '#00FFFF', fontWeight: 'bold' }}>{sentData.symbol}</span>
+                <span style={{
+                  padding: '4px 10px',
+                  borderRadius: 8,
+                  backgroundColor: sentData.sentiment_label === 'positive' ? '#1a472a' : sentData.sentiment_label === 'negative' ? '#4a1a1a' : '#333',
+                  color: sentData.sentiment_label === 'positive' ? '#00ff88' : sentData.sentiment_label === 'negative' ? '#ff6666' : '#ccc',
+                }}>
+                  {sentData.sentiment_label === 'positive' ? 'Pozytywny' : sentData.sentiment_label === 'negative' ? 'Negatywny' : 'Neutralny'}
+                </span>
+                {sentData.sentiment_score != null && (
+                  <span style={{ color: '#888', fontSize: 14 }}>Score: {sentData.sentiment_score.toFixed(2)} (-1 … 1)</span>
+                )}
+                {sentData.headlines_count != null && (
+                  <span style={{ color: '#888', fontSize: 13 }}>
+                    Pozytywne: {sentData.positive_count ?? 0} · Negatywne: {sentData.negative_count ?? 0} · Neutralne: {sentData.neutral_count ?? 0}
+                  </span>
+                )}
+              </div>
+              {sentData.summary && <p style={{ color: '#ccc', fontSize: 14, marginBottom: 12 }}>{sentData.summary}</p>}
+              {sentData.headlines && sentData.headlines.length > 0 && (
+                <details style={{ marginTop: 8 }}>
+                  <summary style={{ cursor: 'pointer', color: '#00FFFF' }}>Nagłówki ({sentData.headlines.length})</summary>
+                  <ul style={{ listStyle: 'none', padding: 0, marginTop: 8 }}>
+                    {sentData.headlines.slice(0, 15).map((h, i) => (
+                      <li key={i} style={{ padding: '6px 0', borderBottom: '1px solid #333', fontSize: 13 }}>
+                        <span style={{
+                          marginRight: 8,
+                          color: h.sentiment_label === 'positive' ? '#00ff88' : h.sentiment_label === 'negative' ? '#ff6666' : '#888',
+                        }}>
+                          {h.sentiment_label === 'positive' ? '↑' : h.sentiment_label === 'negative' ? '↓' : '−'}
+                        </span>
+                        {h.title}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </div>
+          )}
+          {sentData && sentData.status !== 'ok' && sentData.message != null && (
+            <p style={{ color: '#f0ad4e', fontSize: 14 }}>{sentData.message}</p>
           )}
         </div>
 
