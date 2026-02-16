@@ -2,6 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import type { CredentialResponse } from '@react-oauth/google';
 import axios from 'axios';
+import {
+  ComposedChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  ReferenceLine,
+  ReferenceArea,
+} from 'recharts';
 import logo from './assets/logo_SmartInwestor.jpeg';
 import { ChatAdvisor } from './ChatAdvisor';
 import { searchAssets } from './services/assets';
@@ -86,6 +98,24 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Analiza techniczna (EMA, RSI)
+  const [taSymbol, setTaSymbol] = useState('BTC');
+  const [taDays, setTaDays] = useState(30);
+  const [taLoading, setTaLoading] = useState(false);
+  const [taError, setTaError] = useState<string | null>(null);
+  const [taData, setTaData] = useState<{
+    times: number[];
+    prices: number[];
+    ema_fast: (number | null)[];
+    ema_slow: (number | null)[];
+    rsi: (number | null)[];
+    signals: (string | null)[];
+    symbol: string;
+    ema_fast_period: number;
+    ema_slow_period: number;
+    rsi_period: number;
+  } | null>(null);
 
   // Auto-scroll czatu
   useEffect(() => {
@@ -325,7 +355,32 @@ export default function App() {
     setTxPortfolioIds(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
-  }
+  };
+
+  const fetchIndicators = async () => {
+    setTaError(null);
+    setTaLoading(true);
+    const token = localStorage.getItem('accessToken');
+    try {
+      const res = await axios.get(
+        'http://127.0.0.1:8000/api/prices/indicators',
+        {
+          params: { symbol: taSymbol.toUpperCase(), vs: 'usd', days: taDays },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setTaData(res.data);
+    } catch (e) {
+      if (axios.isAxiosError(e) && e.response?.data?.detail) {
+        setTaError(e.response.data.detail);
+      } else {
+        setTaError('Nie udało się pobrać wskaźników (np. symbol nieobsługiwany).');
+      }
+      setTaData(null);
+    } finally {
+      setTaLoading(false);
+    }
+  };
 
   // --- RENDEROWANIE ---
 
@@ -501,6 +556,102 @@ export default function App() {
           {txError && <p style={{ color: '#ff4444', fontSize: 14, marginBottom: 8 }}>{txError}</p>}
           {txSuccess && <p style={{ color: '#00ff88', fontSize: 14, marginBottom: 8 }}>Transakcja dodana.</p>}
           <button onClick={handleAddTransaction} style={styles.primaryBtn}>Dodaj transakcję</button>
+        </div>
+
+        {/* --- ANALIZA TECHNICZNA (EMA, RSI) --- */}
+        <div style={{ marginTop: 30 }}>
+          <h3>Analiza techniczna (EMA, RSI)</h3>
+          <p style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>
+            Wskaźniki: EMA (trend), RSI (wykupienie &gt;70, wyprzedanie &lt;30). Sygnały kupna/sprzedaży przy przecięciu EMA.
+          </p>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+            <input
+              value={taSymbol}
+              onChange={e => setTaSymbol(e.target.value.toUpperCase())}
+              placeholder="Symbol (np. BTC, ETH)"
+              style={{ ...styles.input, width: 120 }}
+            />
+            <select
+              value={taDays}
+              onChange={e => setTaDays(Number(e.target.value))}
+              style={{ ...styles.input, width: 100 }}
+            >
+              <option value={14}>14 dni</option>
+              <option value={30}>30 dni</option>
+              <option value={60}>60 dni</option>
+              <option value={90}>90 dni</option>
+            </select>
+            <button onClick={fetchIndicators} disabled={taLoading} style={styles.primaryBtn}>
+              {taLoading ? 'Pobieram…' : 'Pobierz wskaźniki'}
+            </button>
+          </div>
+          {taError && <p style={{ color: '#ff4444', fontSize: 14, marginBottom: 8 }}>{taError}</p>}
+          {taData && (
+            <>
+              <div style={{ marginBottom: 8, fontSize: 14, color: '#00FFFF' }}>
+                {taData.symbol} · EMA({taData.ema_fast_period}/{taData.ema_slow_period}) · RSI({taData.rsi_period})
+                {(() => {
+                  const lastSignal = [...taData.signals].reverse().find(s => s === 'buy' || s === 'sell');
+                  const lastRsi = [...taData.rsi].reverse().find(r => r != null);
+                  return (
+                    <span style={{ marginLeft: 12, color: '#ccc' }}>
+                      Ostatni sygnał: {lastSignal === 'buy' ? 'Kupno' : lastSignal === 'sell' ? 'Sprzedaż' : '—'}
+                      {lastRsi != null && (
+                        <span style={{ marginLeft: 8 }}>
+                          RSI: {lastRsi.toFixed(1)}
+                          {lastRsi > 70 ? ' (wykupienie)' : lastRsi < 30 ? ' (wyprzedanie)' : ''}
+                        </span>
+                      )}
+                    </span>
+                  );
+                })()}
+              </div>
+              <div style={{ width: '100%', maxWidth: 900, height: 280, marginBottom: 20 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={taData.times.map((t, i) => ({
+                      time: new Date(t).toLocaleDateString('pl-PL', { month: 'short', day: 'numeric' }),
+                      price: taData.prices[i],
+                      ema_fast: taData.ema_fast[i] ?? undefined,
+                      ema_slow: taData.ema_slow[i] ?? undefined,
+                    }))}
+                    margin={{ top: 8, right: 8, left: 8, bottom: 8 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                    <XAxis dataKey="time" tick={{ fill: '#888', fontSize: 11 }} />
+                    <YAxis yAxisId="price" tick={{ fill: '#888', fontSize: 11 }} domain={['auto', 'auto']} />
+                    <Tooltip contentStyle={{ backgroundColor: '#222', border: '1px solid #444' }} labelStyle={{ color: '#00FFFF' }} />
+                    <Legend />
+                    <Line yAxisId="price" type="monotone" dataKey="price" name="Cena" stroke="#00FFFF" dot={false} strokeWidth={2} />
+                    <Line yAxisId="price" type="monotone" dataKey="ema_fast" name={`EMA ${taData.ema_fast_period}`} stroke="#00ff88" dot={false} strokeWidth={1.5} />
+                    <Line yAxisId="price" type="monotone" dataKey="ema_slow" name={`EMA ${taData.ema_slow_period}`} stroke="#ffaa00" dot={false} strokeWidth={1.5} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{ width: '100%', maxWidth: 900, height: 160 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={taData.times.map((t, i) => ({
+                      time: new Date(t).toLocaleDateString('pl-PL', { month: 'short', day: 'numeric' }),
+                      rsi: taData.rsi[i] ?? undefined,
+                    }))}
+                    margin={{ top: 8, right: 8, left: 8, bottom: 8 }}
+                  >
+                    <ReferenceArea yAxisId="rsi" y1={70} y2={100} fill="#ff444420" strokeOpacity={0} />
+                    <ReferenceArea yAxisId="rsi" y1={0} y2={30} fill="#44ff4420" strokeOpacity={0} />
+                    <ReferenceLine yAxisId="rsi" y={70} stroke="#ff4444" strokeDasharray="3 3" />
+                    <ReferenceLine yAxisId="rsi" y={30} stroke="#44ff44" strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                    <XAxis dataKey="time" tick={{ fill: '#888', fontSize: 11 }} />
+                    <YAxis yAxisId="rsi" domain={[0, 100]} tick={{ fill: '#888', fontSize: 11 }} />
+                    <Tooltip contentStyle={{ backgroundColor: '#222', border: '1px solid #444' }} />
+                    <Legend />
+                    <Line yAxisId="rsi" type="monotone" dataKey="rsi" name="RSI" stroke="#00FFFF" dot={false} strokeWidth={2} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </>
+          )}
         </div>
 
         {/* --- KOMPONENT CZATU AI (BĄBELEK) --- */}

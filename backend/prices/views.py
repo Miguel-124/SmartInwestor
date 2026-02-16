@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.core.cache import cache
 from .services.coingecko import get_simple_price, get_market_chart
+from .services.indicators import ema, rsi, crossover_signals
 
 class QuoteView(APIView):
     """
@@ -51,3 +52,80 @@ class ChartView(APIView):
                 return Response({"error": "chart_fetch_failed", "detail": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
             cache.set(cache_key, data, 300)  # 5 minut
         return Response({"symbol": symbol, "vs": vs, "days": days, "data": data})
+
+
+class IndicatorsView(APIView):
+    """
+    Wskaźniki techniczne: EMA, RSI, sygnały przecięcia EMA.
+    GET /api/prices/indicators?symbol=BTC&vs=usd&days=30&ema_fast=12&ema_slow=26&rsi_period=14
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        symbol = (request.query_params.get("symbol") or "BTC").upper()
+        vs = (request.query_params.get("vs") or "usd").lower()
+        try:
+            days = int(request.query_params.get("days", "30"))
+            ema_fast_n = int(request.query_params.get("ema_fast", "12"))
+            ema_slow_n = int(request.query_params.get("ema_slow", "26"))
+            rsi_period = int(request.query_params.get("rsi_period", "14"))
+        except (TypeError, ValueError):
+            ema_fast_n, ema_slow_n, rsi_period = 12, 26, 14
+            days = 30
+
+        cache_key = f"ind:{symbol}:{vs}:{days}:{ema_fast_n}:{ema_slow_n}:{rsi_period}"
+        data = cache.get(cache_key)
+        if data is not None:
+            return Response(data)
+
+        try:
+            raw = get_market_chart(symbol, vs, days)
+        except Exception as e:
+            return Response(
+                {"error": "chart_fetch_failed", "detail": str(e)},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        prices_raw = raw.get("prices") or []
+        if len(prices_raw) < max(ema_slow_n, rsi_period) + 5:
+            return Response(
+                {"error": "not_enough_data", "detail": "Za mało punktów cenowych do obliczenia wskaźników."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        prices_raw.sort(key=lambda x: x[0])
+        times = [p[0] for p in prices_raw]
+        prices = [float(p[1]) for p in prices_raw]
+
+        ema_fast = ema(prices, ema_fast_n)
+        ema_slow = ema(prices, ema_slow_n)
+        rsi_vals = rsi(prices, rsi_period)
+        signals = crossover_signals(ema_fast, ema_slow)
+
+        payload = {
+            "symbol": symbol,
+            "vs": vs,
+            "days": days,
+            "ema_fast_period": ema_fast_n,
+            "ema_slow_period": ema_slow_n,
+            "rsi_period": rsi_period,
+            "times": times,
+            "prices": prices,
+            "ema_fast": ema_fast,
+            "ema_slow": ema_slow,
+            "rsi": rsi_vals,
+            "signals": signals,
+        }
+        cache.set(cache_key, payload, 300)
+        return Response(payload)
+
+
+class SentimentView(APIView):
+    """
+    Analiza sentymentu (stub). GET /api/prices/sentiment?symbol=BTC
+    Docelowo: NLP / media społecznościowe (np. X).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        symbol = (request.query_params.get("symbol") or "BTC").upper()
+        from .services.sentiment import get_sentiment_for_symbol
+        return Response(get_sentiment_for_symbol(symbol))

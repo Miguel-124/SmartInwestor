@@ -11,5 +11,5 @@ RUN npm install
 # 4. Skopiuj cały kod
 COPY . .
 
-# 5. Domyślna komenda startowa
-CMD ["npm", "run", "dev"]
+# 5. Przy starcie doinstaluj zależności (gdy volume nadpisuje kod), potem dev
+CMD ["sh", "-c", "npm install && npm run dev"]

@@ -29,10 +29,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    command: npm run dev
+    command: sh -c "npm install && npm run dev"
     volumes:
       - ./frontend:/app
-      - /app/node_modules
+      # Bez osobnego wolumenu node_modules – kontener widzi Twój lokalny node_modules (npm install w ./frontend)
     env_file:
       - ./frontend/.env
     ports:
