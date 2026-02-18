@@ -15,10 +15,12 @@ MAX_HEADLINES = 20
 REQUEST_TIMEOUT = 10
 
 
-def _fetch_news_rss(query: str, lang: str = "pl") -> list[dict]:
-    """Pobiera nagłówki z Google News RSS. Zwraca listę {title, link, source}."""
+def _fetch_news_rss(query: str, lang: str = "pl", days: int = 2) -> list[dict]:
+    """Pobiera nagłówki z Google News RSS (z ostatnich `days` dni). Zwraca listę {title, link, source}."""
+    # when:2d ogranicza wyniki do ostatnich 2 dni (format Google News RSS)
+    q = f"{query} when:{days}d" if days else query
     params = {
-        "q": query,
+        "q": q,
         "hl": lang,
         "gl": "PL" if lang == "pl" else "US",
         "ceid": "PL:pl" if lang == "pl" else "US:en",
@@ -60,15 +62,16 @@ def _analyze_sentiment(text: str) -> float:
     return float(scores["compound"])
 
 
-def get_sentiment_for_symbol(symbol: str) -> dict:
+def get_sentiment_for_symbol(symbol: str, days: int = 2) -> dict:
     """
-    Pobiera nagłówki z internetu (Google News) dla symbolu i zwraca agregowany sentyment.
+    Pobiera nagłówki z internetu (Google News) z ostatnich `days` dni i zwraca agregowany sentyment.
     Zwraca: symbol, status, sentiment_score (-1..1), sentiment_label, headlines, summary.
+    Domyślnie days=2 (ostatnie 2 dni).
     """
     symbol = symbol.upper().strip()
     # Dla krypto dopisujemy "crypto", dla akcji "stock" – lepsze wyniki w wyszukiwarce
     query = f"{symbol} crypto" if _looks_crypto(symbol) else f"{symbol} stock"
-    headlines = _fetch_news_rss(query)
+    headlines = _fetch_news_rss(query, days=days)
 
     if not headlines:
         return {
@@ -111,6 +114,7 @@ def get_sentiment_for_symbol(symbol: str) -> dict:
     return {
         "symbol": symbol,
         "status": "ok",
+        "days": days,
         "sentiment_score": round(avg, 4),
         "sentiment_label": overall_label,
         "headlines_count": len(scored),
@@ -119,7 +123,7 @@ def get_sentiment_for_symbol(symbol: str) -> dict:
         "neutral_count": neutral_count,
         "headlines": scored,
         "summary": (
-            f"Na podstawie {len(scored)} nagłówków: sentyment {overall_label} (score {avg:.2f}). "
+            f"Na podstawie {len(scored)} nagłówków z ostatnich {days} dni: sentyment {overall_label} (score {avg:.2f}). "
             f"Pozytywne: {positive_count}, negatywne: {negative_count}, neutralne: {neutral_count}."
         ),
     }

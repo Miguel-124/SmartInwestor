@@ -46,14 +46,37 @@ class LoginSerializer(serializers.Serializer):
             'user': {
                 'id': user.id,
                 'email': user.email,
+                'has_completed_survey': getattr(user, 'has_completed_survey', False),
+                'risk_profile': getattr(user, 'risk_profile', None),
             }
         }
     
 class MeSerializer(serializers.ModelSerializer):
+    has_completed_survey = serializers.ReadOnlyField()
+
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "avatar_url"]
+        fields = [
+            "id", "email", "first_name", "last_name", "avatar_url",
+            "risk_profile", "survey_completed_at", "has_completed_survey",
+        ]
         read_only_fields = fields
+
+
+class SurveySerializer(serializers.Serializer):
+    """Ankieta: profil ryzyka (agresywny ±80%, umiarkowany ±20%, bezpieczny ±4%)."""
+    risk_profile = serializers.ChoiceField(
+        choices=[c[0] for c in User.RISK_CHOICES],
+        required=True,
+    )
+
+    def save(self, **kwargs):
+        from django.utils import timezone
+        user = self.context["request"].user
+        user.risk_profile = self.validated_data["risk_profile"]
+        user.survey_completed_at = timezone.now()
+        user.save()
+        return user
 
 class SetPasswordSerializer(serializers.Serializer):
     """Ustawia hasło dla kont, które dotąd logowały się np. tylko Google (bez hasła)."""

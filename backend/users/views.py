@@ -8,7 +8,7 @@ from google.auth.transport import requests
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
-from .serializers import MeSerializer, SetPasswordSerializer, ChangePasswordSerializer, RegisterSerializer, LoginSerializer
+from .serializers import MeSerializer, SurveySerializer, SetPasswordSerializer, ChangePasswordSerializer, RegisterSerializer, LoginSerializer
 from portfolios.models import Portfolio
 
 
@@ -47,6 +47,8 @@ class GoogleLoginView(APIView):
                     "email": user.email,
                     "avatar_url": user.avatar_url,
                     "is_google_linked": user.is_google_linked,
+                    "has_completed_survey": user.has_completed_survey,
+                    "risk_profile": user.risk_profile,
                 }
             })
         except ValueError:
@@ -64,7 +66,12 @@ class RegisterView(APIView):
             return Response({
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
-                "user": {"id": user.id, "email": user.email}
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "has_completed_survey": user.has_completed_survey,
+                    "risk_profile": user.risk_profile,
+                }
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -84,6 +91,35 @@ class MeView(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class SurveyView(APIView):
+    """
+    Ankieta (profil ryzyka). POST/PUT – zapis odpowiedzi i ustawienie survey_completed_at.
+    GET – zwraca aktualne odpowiedzi (risk_profile).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            "risk_profile": user.risk_profile,
+            "survey_completed_at": user.survey_completed_at.isoformat() if user.survey_completed_at else None,
+            "has_completed_survey": user.has_completed_survey,
+        })
+
+    def put(self, request):
+        serializer = SurveySerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({
+            "risk_profile": request.user.risk_profile,
+            "survey_completed_at": request.user.survey_completed_at.isoformat(),
+            "has_completed_survey": True,
+        })
+
+    def patch(self, request):
+        return self.put(request)
 
 
 class LogoutView(APIView):

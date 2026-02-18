@@ -25,6 +25,8 @@ interface UserData {
   id: number;
   email: string;
   avatar_url?: string;
+  has_completed_survey?: boolean;
+  risk_profile?: string | null;
 }
 
 interface Portfolio {
@@ -38,6 +40,16 @@ interface Position {
   quantity: string;
   total_cost: string;
   avg_price: string;
+  current_price?: number | null;
+  current_value?: number | null;
+  pl_amount?: number | null;
+  pl_percent?: number | null;
+  value_7d_ago?: number | null;
+  pl_7d_amount?: number | null;
+  pl_7d_percent?: number | null;
+  value_from_date?: number | null;
+  pl_from_amount?: number | null;
+  pl_from_percent?: number | null;
 }
 
 interface TransactionRow {
@@ -74,9 +86,24 @@ export default function App() {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [newPortfolioName, setNewPortfolioName] = useState('');
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<number | null>(null);
-  const [portfolioDetail, setPortfolioDetail] = useState<{ name: string; positions: Position[] } | null>(null);
+  const [portfolioDetail, setPortfolioDetail] = useState<{
+    name: string;
+    positions: Position[];
+    total_cost?: string;
+    total_current_value?: string;
+    total_pl_amount?: string | null;
+    total_pl_percent?: number | null;
+    total_value_7d_ago?: string | null;
+    total_pl_7d_amount?: string | null;
+    total_pl_7d_percent?: number | null;
+    total_value_from_date?: string | null;
+    total_pl_from_amount?: string | null;
+    total_pl_from_percent?: number | null;
+  } | null>(null);
   const [portfolioTransactions, setPortfolioTransactions] = useState<TransactionRow[]>([]);
   const [portfolioDetailLoading, setPortfolioDetailLoading] = useState(false);
+  const [plViewMode, setPlViewMode] = useState<'overall' | '7d' | 'from'>('overall');
+  const [plFromDate, setPlFromDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   // Stany formularza transakcji (jak w mobilce)
   const [txTicker, setTxTicker] = useState('');
@@ -117,7 +144,12 @@ export default function App() {
     rsi_period: number;
   } | null>(null);
 
-  // Sentyment z internetu (nagłówki z wyszukiwarki)
+  // Ankieta (profil ryzyka)
+  const [showSurveyModal, setShowSurveyModal] = useState(false);
+  const [surveyRisk, setSurveyRisk] = useState<string>('moderate');
+  const [surveySaving, setSurveySaving] = useState(false);
+
+  // Sentyment z internetu (nagłówki z ostatnich 2 dni)
   const [sentSymbol, setSentSymbol] = useState('BTC');
   const [sentLoading, setSentLoading] = useState(false);
   const [sentError, setSentError] = useState<string | null>(null);
@@ -144,6 +176,11 @@ export default function App() {
   useEffect(() => {
     if (user) fetchPortfolios();
   }, [user]);
+
+  // Przy otwarciu ankiety ustaw aktualny profil ryzyka
+  useEffect(() => {
+    if (showSurveyModal && user?.risk_profile) setSurveyRisk(user.risk_profile);
+  }, [showSurveyModal, user?.risk_profile]);
 
   // Wyszukiwanie symboli (debounce 500 ms) – jak w mobilce
   useEffect(() => {
@@ -181,6 +218,7 @@ export default function App() {
     setUser(u);
     localStorage.setItem('accessToken', access);
     localStorage.setItem('refreshToken', refresh);
+    if (u && !u.has_completed_survey) setShowSurveyModal(true);
   };
 
   // --- LOGIKA CZATU AI ---
@@ -267,25 +305,45 @@ export default function App() {
     }
   };
 
-  const openPortfolioDetail = async (id: number) => {
+  const openPortfolioDetail = async (id: number, fromDate?: string) => {
     setSelectedPortfolioId(id);
     setPortfolioDetailLoading(true);
     setPortfolioDetail(null);
     setPortfolioTransactions([]);
     const token = localStorage.getItem('accessToken');
     const headers = { Authorization: `Bearer ${token}` };
+    const detailParams = fromDate ? { from_date: fromDate } : {};
     try {
       const [detailRes, txRes] = await Promise.all([
-        axios.get(`http://127.0.0.1:8000/api/portfolios/${id}/`, { headers }),
+        axios.get(`http://127.0.0.1:8000/api/portfolios/${id}/`, { headers, params: detailParams }),
         axios.get(`http://127.0.0.1:8000/api/portfolios/${id}/transactions/`, { headers }),
       ]);
-      setPortfolioDetail({ name: detailRes.data.name, positions: detailRes.data.positions || [] });
+      setPortfolioDetail({
+        name: detailRes.data.name,
+        positions: detailRes.data.positions || [],
+        total_cost: detailRes.data.total_cost,
+        total_current_value: detailRes.data.total_current_value,
+        total_pl_amount: detailRes.data.total_pl_amount,
+        total_pl_percent: detailRes.data.total_pl_percent,
+        total_value_7d_ago: detailRes.data.total_value_7d_ago,
+        total_pl_7d_amount: detailRes.data.total_pl_7d_amount,
+        total_pl_7d_percent: detailRes.data.total_pl_7d_percent,
+        total_value_from_date: detailRes.data.total_value_from_date,
+        total_pl_from_amount: detailRes.data.total_pl_from_amount,
+        total_pl_from_percent: detailRes.data.total_pl_from_percent,
+      });
       setPortfolioTransactions(txRes.data || []);
     } catch (e) {
       console.error(e);
       setPortfolioDetail({ name: '?', positions: [] });
     } finally {
       setPortfolioDetailLoading(false);
+    }
+  };
+
+  const refetchPortfolioDetailWithDate = () => {
+    if (selectedPortfolioId != null && plViewMode === 'from') {
+      openPortfolioDetail(selectedPortfolioId, plFromDate);
     }
   };
 
@@ -323,8 +381,9 @@ export default function App() {
       fee: 0,
       executed_at: executedAt,
       asset_type: txAssetType,
-      ...(txPortfolioIds.length > 0 && { portfolio_ids: txPortfolioIds }),
+      portfolio_ids: txPortfolioIds.length > 0 ? txPortfolioIds : (selectedPortfolioId != null ? [selectedPortfolioId] : undefined),
     };
+    if (body.portfolio_ids === undefined) delete (body as Record<string, unknown>).portfolio_ids;
     try {
       await axios.post(
         'http://127.0.0.1:8000/api/transactions/',
@@ -339,6 +398,7 @@ export default function App() {
       setTxPortfolioIds([]);
       setTxSelectedAsset(null);
       setTxAssetSuggestions([]);
+      if (selectedPortfolioId != null) openPortfolioDetail(selectedPortfolioId);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
@@ -408,7 +468,7 @@ export default function App() {
       const res = await axios.get(
         'http://127.0.0.1:8000/api/prices/sentiment',
         {
-          params: { symbol: sentSymbol.toUpperCase() },
+          params: { symbol: sentSymbol.toUpperCase(), days: 2 },
           headers: { Authorization: `Bearer ${token}` },
         }
       );
@@ -427,16 +487,68 @@ export default function App() {
     }
   };
 
+  const submitSurvey = async () => {
+    setSurveySaving(true);
+    const token = localStorage.getItem('accessToken');
+    try {
+      const res = await axios.put(
+        'http://127.0.0.1:8000/api/auth/survey/',
+        { risk_profile: surveyRisk },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setUser(prev => prev ? { ...prev, has_completed_survey: true, risk_profile: res.data.risk_profile } : null);
+      setShowSurveyModal(false);
+    } finally {
+      setSurveySaving(false);
+    }
+  };
+
   // --- RENDEROWANIE ---
 
   // Widok po zalogowaniu
   if (user) {
     return (
       <div style={{ padding: 20, backgroundColor: '#121212', minHeight: '100vh', color: '#fff' }}>
+        {/* Modal ankiety (onboarding lub zmiana odpowiedzi) */}
+        {showSurveyModal && (
+          <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+            <div style={{ backgroundColor: '#1e1e1e', border: '1px solid #444', borderRadius: 12, padding: 24, maxWidth: 420, width: '90%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h3 style={{ color: '#00FFFF', margin: 0 }}>Ankieta – profil ryzyka</h3>
+                {user.has_completed_survey && (
+                  <button type="button" onClick={() => setShowSurveyModal(false)} style={{ background: 'none', border: 'none', color: '#888', fontSize: 24, cursor: 'pointer' }}>×</button>
+                )}
+              </div>
+              <p style={{ color: '#ccc', fontSize: 14, marginBottom: 16 }}>Jak chcesz inwestować? (zmiana odpowiedzi możliwa w dowolnym momencie.)</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {[
+                  { value: 'aggressive', label: 'Agresywnie (±80%)', desc: 'Wyższe ryzyko i potencjalnie wyższe zyski/straty' },
+                  { value: 'moderate', label: 'Umiarkowanie (±20%)', desc: 'Średnie ryzyko' },
+                  { value: 'safe', label: 'Bezpiecznie (±4%)', desc: 'Niskie ryzyko' },
+                ].map(opt => (
+                  <label key={opt.value} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: 10, backgroundColor: surveyRisk === opt.value ? '#252525' : 'transparent', borderRadius: 8 }}>
+                    <input type="radio" name="surveyRisk" value={opt.value} checked={surveyRisk === opt.value} onChange={() => setSurveyRisk(opt.value)} />
+                    <div>
+                      <span style={{ fontWeight: 'bold' }}>{opt.label}</span>
+                      <div style={{ fontSize: 12, color: '#888' }}>{opt.desc}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <button onClick={submitSurvey} disabled={surveySaving} style={{ ...styles.primaryBtn, marginTop: 16, width: '100%' }}>
+                {surveySaving ? 'Zapisywanie…' : 'Zapisz'}
+              </button>
+            </div>
+          </div>
+        )}
+
         <img src={logo} alt="SmartInwestor Logo" style={{ width: 100, borderRadius: '10px' }} />
         <h2>Panel Inwestora: {user.email}</h2>
         
-        <button onClick={handleLogout} style={styles.secondaryBtn}>Wyloguj</button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button onClick={handleLogout} style={styles.secondaryBtn}>Wyloguj</button>
+          <button onClick={() => setShowSurveyModal(true)} style={styles.secondaryBtn}>Ankieta / Preferencje ryzyka</button>
+        </div>
 
         <div style={{ marginTop: 30 }}>
           <h3>Twoje Portfele</h3>
@@ -472,18 +584,114 @@ export default function App() {
             </div>
             {!portfolioDetailLoading && portfolioDetail && (
               <>
-                <h5 style={{ color: '#ccc', marginTop: 12, marginBottom: 8 }}>Podsumowanie (aktywa)</h5>
+                {/* Wybór widoku P/L: Całościowo | 7 dni | Od daty */}
+                <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+                  <span style={{ color: '#888', fontSize: 13 }}>P/L:</span>
+                  {(['overall', '7d', 'from'] as const).map(mode => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => { setPlViewMode(mode); if (mode === 'from' && selectedPortfolioId) openPortfolioDetail(selectedPortfolioId, plFromDate); }}
+                      style={{
+                        ...styles.secondaryBtn,
+                        backgroundColor: plViewMode === mode ? '#00FFFF' : undefined,
+                        color: plViewMode === mode ? '#000' : undefined,
+                      }}
+                    >
+                      {mode === 'overall' ? 'Całościowo' : mode === '7d' ? 'Ostatnie 7 dni' : 'Od daty'}
+                    </button>
+                  ))}
+                  {plViewMode === 'from' && (
+                    <>
+                      <input
+                        type="date"
+                        value={plFromDate}
+                        onChange={e => setPlFromDate(e.target.value)}
+                        style={{ ...styles.input, width: 150, margin: 0 }}
+                      />
+                      <button type="button" onClick={refetchPortfolioDetailWithDate} style={styles.primaryBtn}>Pobierz</button>
+                    </>
+                  )}
+                </div>
+
+                {/* Karta podsumowania portfela */}
+                {(portfolioDetail.total_cost != null || portfolioDetail.total_current_value != null) && (
+                  <div style={{ marginBottom: 20, padding: 20, backgroundColor: '#1a1a2e', border: '1px solid #333', borderRadius: 12 }}>
+                    <h5 style={{ color: '#00FFFF', marginTop: 0, marginBottom: 12, fontSize: 16 }}>Portfel łącznie</h5>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 16, fontSize: 14 }}>
+                      <div>
+                        <div style={{ color: '#888', fontSize: 12 }}>Koszt łącznie</div>
+                        <div style={{ fontWeight: 'bold' }}>{portfolioDetail.total_cost ?? '—'} USD</div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#888', fontSize: 12 }}>Wartość bieżąca</div>
+                        <div style={{ fontWeight: 'bold', color: '#00FFFF' }}>{portfolioDetail.total_current_value ?? '—'} USD</div>
+                      </div>
+                      {plViewMode === 'overall' && portfolioDetail.total_pl_amount != null && portfolioDetail.total_pl_percent != null && (
+                        <div>
+                          <div style={{ color: '#888', fontSize: 12 }}>P/L całościowo</div>
+                          <div style={{ fontWeight: 'bold', color: Number(portfolioDetail.total_pl_amount) >= 0 ? '#00ff88' : '#ff6666' }}>
+                            {portfolioDetail.total_pl_amount} USD ({portfolioDetail.total_pl_percent}%)
+                          </div>
+                        </div>
+                      )}
+                      {plViewMode === '7d' && portfolioDetail.total_pl_7d_amount != null && portfolioDetail.total_pl_7d_percent != null && (
+                        <div>
+                          <div style={{ color: '#888', fontSize: 12 }}>P/L (7 dni)</div>
+                          <div style={{ fontWeight: 'bold', color: Number(portfolioDetail.total_pl_7d_amount) >= 0 ? '#00ff88' : '#ff6666' }}>
+                            {portfolioDetail.total_pl_7d_amount} USD ({portfolioDetail.total_pl_7d_percent}%)
+                          </div>
+                        </div>
+                      )}
+                      {plViewMode === 'from' && portfolioDetail.total_pl_from_amount != null && portfolioDetail.total_pl_from_percent != null && (
+                        <div>
+                          <div style={{ color: '#888', fontSize: 12 }}>P/L od {plFromDate}</div>
+                          <div style={{ fontWeight: 'bold', color: Number(portfolioDetail.total_pl_from_amount) >= 0 ? '#00ff88' : '#ff6666' }}>
+                            {portfolioDetail.total_pl_from_amount} USD ({portfolioDetail.total_pl_from_percent}%)
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tabela aktywów */}
+                <h5 style={{ color: '#ccc', marginTop: 8, marginBottom: 10 }}>Aktywa</h5>
                 {portfolioDetail.positions.length === 0 ? (
                   <p style={{ color: '#888', fontSize: 14 }}>Brak pozycji.</p>
                 ) : (
-                  <ul style={{ listStyle: 'none', padding: 0, marginBottom: 16 }}>
-                    {portfolioDetail.positions.map((pos, i) => (
-                      <li key={i} style={{ padding: '8px 0', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>{pos.symbol}</span>
-                        <span>ilość: {pos.quantity} · średnia: {pos.avg_price} · łącznie: {pos.total_cost}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <div style={{ overflowX: 'auto', marginBottom: 16 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid #444', color: '#00FFFF' }}>
+                          <th style={{ textAlign: 'left', padding: '10px 8px' }}>Symbol</th>
+                          <th style={{ textAlign: 'right', padding: '10px 8px' }}>Ilość</th>
+                          <th style={{ textAlign: 'right', padding: '10px 8px' }}>Koszt łącznie</th>
+                          <th style={{ textAlign: 'right', padding: '10px 8px' }}>Wartość bieżąca</th>
+                          <th style={{ textAlign: 'right', padding: '10px 8px' }}>P/L</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {portfolioDetail.positions.map((pos, i) => {
+                          const plAmt = plViewMode === 'overall' ? pos.pl_amount : plViewMode === '7d' ? pos.pl_7d_amount : pos.pl_from_amount;
+                          const plPct = plViewMode === 'overall' ? pos.pl_percent : plViewMode === '7d' ? pos.pl_7d_percent : pos.pl_from_percent;
+                          return (
+                            <tr key={i} style={{ borderBottom: '1px solid #333' }}>
+                              <td style={{ padding: '10px 8px', fontWeight: 'bold' }}>{pos.symbol}</td>
+                              <td style={{ padding: '10px 8px', textAlign: 'right' }}>{pos.quantity}</td>
+                              <td style={{ padding: '10px 8px', textAlign: 'right' }}>{pos.total_cost} USD</td>
+                              <td style={{ padding: '10px 8px', textAlign: 'right', color: '#00FFFF' }}>
+                                {pos.current_value != null ? `${pos.current_value} USD` : '—'}
+                              </td>
+                              <td style={{ padding: '10px 8px', textAlign: 'right', color: plAmt != null && plAmt >= 0 ? '#00ff88' : plAmt != null ? '#ff6666' : '#888' }}>
+                                {plAmt != null && plPct != null ? `${plAmt} USD (${plPct}%)` : '—'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
                 <h5 style={{ color: '#ccc', marginTop: 12, marginBottom: 8 }}>Transakcje</h5>
                 {portfolioTransactions.length === 0 ? (
@@ -491,8 +699,29 @@ export default function App() {
                 ) : (
                   <ul style={{ listStyle: 'none', padding: 0 }}>
                     {portfolioTransactions.map(tx => (
-                      <li key={tx.id} style={{ padding: '8px 0', borderBottom: '1px solid #333', fontSize: 14 }}>
-                        {tx.side} {tx.symbol} · {tx.quantity} × {tx.price} · {new Date(tx.executed_at).toLocaleString('pl-PL')}
+                      <li key={tx.id} style={{ padding: '8px 0', borderBottom: '1px solid #333', fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                        <span>{tx.side} {tx.symbol} · {tx.quantity} × {tx.price} · {new Date(tx.executed_at).toLocaleString('pl-PL')}</span>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!window.confirm('Usunąć tę transakcję?')) return;
+                            try {
+                              await axios.delete(`http://127.0.0.1:8000/api/transactions/${tx.id}/`, {
+                                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+                              });
+                              if (selectedPortfolioId != null) openPortfolioDetail(selectedPortfolioId);
+                            } catch (err) {
+                              if (axios.isAxiosError(err) && err.response?.data?.detail) {
+                                alert(err.response.data.detail);
+                              } else {
+                                alert('Nie udało się usunąć transakcji.');
+                              }
+                            }
+                          }}
+                          style={{ ...styles.secondaryBtn, padding: '4px 10px', fontSize: 12 }}
+                        >
+                          Usuń
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -707,7 +936,7 @@ export default function App() {
         <div style={{ marginTop: 30 }}>
           <h3>Sentyment z internetu</h3>
           <p style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>
-            Analiza nagłówków z wyszukiwarki (Google News) – pozytywne / negatywne / neutralne.
+            Analiza nagłówków z wyszukiwarki (Google News) z ostatnich 2 dni – pozytywne / negatywne / neutralne.
           </p>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
             <input

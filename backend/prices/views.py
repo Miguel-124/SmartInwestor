@@ -129,11 +129,16 @@ class SentimentView(APIView):
 
     def get(self, request):
         symbol = (request.query_params.get("symbol") or "BTC").upper()
-        cache_key = f"sent:{symbol}"
+        try:
+            days = int(request.query_params.get("days", "2"))
+        except ValueError:
+            days = 2
+        days = max(1, min(days, 7))  # 1–7 dni
+        cache_key = f"sent:{symbol}:{days}"
         data = cache.get(cache_key)
         if data is not None:
             return Response(data)
         from .services.sentiment import get_sentiment_for_symbol
-        data = get_sentiment_for_symbol(symbol)
+        data = get_sentiment_for_symbol(symbol, days=days)
         cache.set(cache_key, data, 900)  # 15 min
         return Response(data)
