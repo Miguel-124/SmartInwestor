@@ -50,6 +50,9 @@ interface Position {
   value_from_date?: number | null;
   pl_from_amount?: number | null;
   pl_from_percent?: number | null;
+  value_24h_ago?: number | null;
+  pl_24h_amount?: number | null;
+  pl_24h_percent?: number | null;
 }
 
 interface TransactionRow {
@@ -99,10 +102,13 @@ export default function App() {
     total_value_from_date?: string | null;
     total_pl_from_amount?: string | null;
     total_pl_from_percent?: number | null;
+    total_value_24h_ago?: string | null;
+    total_pl_24h_amount?: string | null;
+    total_pl_24h_percent?: number | null;
   } | null>(null);
   const [portfolioTransactions, setPortfolioTransactions] = useState<TransactionRow[]>([]);
   const [portfolioDetailLoading, setPortfolioDetailLoading] = useState(false);
-  const [plViewMode, setPlViewMode] = useState<'overall' | '7d' | 'from'>('overall');
+  const [plViewMode, setPlViewMode] = useState<'overall' | '7d' | '24h' | 'from'>('overall');
   const [plFromDate, setPlFromDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   // Stany formularza transakcji (jak w mobilce)
@@ -331,6 +337,9 @@ export default function App() {
         total_value_from_date: detailRes.data.total_value_from_date,
         total_pl_from_amount: detailRes.data.total_pl_from_amount,
         total_pl_from_percent: detailRes.data.total_pl_from_percent,
+        total_value_24h_ago: detailRes.data.total_value_24h_ago,
+        total_pl_24h_amount: detailRes.data.total_pl_24h_amount,
+        total_pl_24h_percent: detailRes.data.total_pl_24h_percent,
       });
       setPortfolioTransactions(txRes.data || []);
     } catch (e) {
@@ -587,7 +596,7 @@ export default function App() {
                 {/* Wybór widoku P/L: Całościowo | 7 dni | Od daty */}
                 <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
                   <span style={{ color: '#888', fontSize: 13 }}>P/L:</span>
-                  {(['overall', '7d', 'from'] as const).map(mode => (
+                  {(['overall', '7d', '24h', 'from'] as const).map(mode => (
                     <button
                       key={mode}
                       type="button"
@@ -598,7 +607,7 @@ export default function App() {
                         color: plViewMode === mode ? '#000' : undefined,
                       }}
                     >
-                      {mode === 'overall' ? 'Całościowo' : mode === '7d' ? 'Ostatnie 7 dni' : 'Od daty'}
+                      {mode === 'overall' ? 'Całościowo' : mode === '7d' ? 'Ostatnie 7 dni' : mode === '24h' ? 'Ostatnie 24 h' : 'Od daty'}
                     </button>
                   ))}
                   {plViewMode === 'from' && (
@@ -643,6 +652,14 @@ export default function App() {
                           </div>
                         </div>
                       )}
+                      {plViewMode === '24h' && portfolioDetail.total_pl_24h_amount != null && portfolioDetail.total_pl_24h_percent != null && (
+                        <div>
+                          <div style={{ color: '#888', fontSize: 12 }}>P/L (24 h)</div>
+                          <div style={{ fontWeight: 'bold', color: Number(portfolioDetail.total_pl_24h_amount) >= 0 ? '#00ff88' : '#ff6666' }}>
+                            {portfolioDetail.total_pl_24h_amount} USD ({portfolioDetail.total_pl_24h_percent}%)
+                          </div>
+                        </div>
+                      )}
                       {plViewMode === 'from' && portfolioDetail.total_pl_from_amount != null && portfolioDetail.total_pl_from_percent != null && (
                         <div>
                           <div style={{ color: '#888', fontSize: 12 }}>P/L od {plFromDate}</div>
@@ -673,8 +690,8 @@ export default function App() {
                       </thead>
                       <tbody>
                         {portfolioDetail.positions.map((pos, i) => {
-                          const plAmt = plViewMode === 'overall' ? pos.pl_amount : plViewMode === '7d' ? pos.pl_7d_amount : pos.pl_from_amount;
-                          const plPct = plViewMode === 'overall' ? pos.pl_percent : plViewMode === '7d' ? pos.pl_7d_percent : pos.pl_from_percent;
+                          const plAmt = plViewMode === 'overall' ? pos.pl_amount : plViewMode === '7d' ? pos.pl_7d_amount : plViewMode === '24h' ? pos.pl_24h_amount : pos.pl_from_amount;
+                          const plPct = plViewMode === 'overall' ? pos.pl_percent : plViewMode === '7d' ? pos.pl_7d_percent : plViewMode === '24h' ? pos.pl_24h_percent : pos.pl_from_percent;
                           return (
                             <tr key={i} style={{ borderBottom: '1px solid #333' }}>
                               <td style={{ padding: '10px 8px', fontWeight: 'bold' }}>{pos.symbol}</td>

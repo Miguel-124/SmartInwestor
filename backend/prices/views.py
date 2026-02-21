@@ -5,6 +5,7 @@ from rest_framework import status, permissions
 from django.core.cache import cache
 from .services.coingecko import get_simple_price, get_market_chart
 from .services.indicators import ema, rsi, crossover_signals
+from .services.analysis import compute_series_stats
 
 class QuoteView(APIView):
     """
@@ -88,7 +89,9 @@ class IndicatorsView(APIView):
                 status=status.HTTP_502_BAD_GATEWAY,
             )
         prices_raw = raw.get("prices") or []
-        if len(prices_raw) < max(ema_slow_n, rsi_period) + 5:
+        # Minimum: pierwsza wartość EMA/RSI potrzebuje max(ema_slow_n, rsi_period) punktów; +1 żeby było co liczyć
+        min_points = max(ema_slow_n, rsi_period) + 1
+        if len(prices_raw) < min_points:
             return Response(
                 {"error": "not_enough_data", "detail": "Za mało punktów cenowych do obliczenia wskaźników."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -115,6 +118,62 @@ class IndicatorsView(APIView):
             "ema_slow": ema_slow,
             "rsi": rsi_vals,
             "signals": signals,
+        }
+        cache.set(cache_key, payload, 300)
+        return Response(payload)
+
+
+class AnalysisView(APIView):
+    """
+    Rozszerzona analiza szeregu cenowego (pandas/numpy): zmienność, zwroty.
+    GET /api/prices/analysis?symbol=BTC&vs=usd&days=30
+    Nie zastępuje wskaźników EMA/RSI – dodaje volatility_annualized, return_1d, return_7d, return_total.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        symbol = (request.query_params.get("symbol") or "BTC").upper()
+        vs = (request.query_params.get("vs") or "usd").lower()
+        try:
+            days = int(request.query_params.get("days", "30"))
+        except ValueError:
+            days = 30
+        days = max(1, min(days, 365))
+        cache_key = f"analysis:{symbol}:{vs}:{days}"
+        data = cache.get(cache_key)
+        if data is not None:
+            return Response(data)
+        try:
+            raw = get_market_chart(symbol, vs, days)
+        except Exception as e:
+            return Response(
+                {"error": "chart_fetch_failed", "detail": str(e)},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        prices_raw = raw.get("prices") or []
+        if len(prices_raw) < 2:
+            return Response(
+                {"error": "not_enough_data", "detail": "Za mało punktów do analizy."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        prices_raw.sort(key=lambda x: x[0])
+        times = [p[0] for p in prices_raw]
+        prices = [float(p[1]) for p in prices_raw]
+        stats = compute_series_stats(times, prices)
+        if stats is None:
+            return Response({
+                "symbol": symbol,
+                "vs": vs,
+                "days": days,
+                "extended_available": False,
+                "message": "Analiza rozszerzona (pandas/numpy) niedostępna lub za mało danych.",
+            })
+        payload = {
+            "symbol": symbol,
+            "vs": vs,
+            "days": days,
+            "extended_available": True,
+            **stats,
         }
         cache.set(cache_key, payload, 300)
         return Response(payload)

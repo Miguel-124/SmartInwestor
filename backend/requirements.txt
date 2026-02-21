@@ -8,6 +8,7 @@ python-dotenv>=0.21.0 # Env variables
 google-auth>=2.39.0 # Google Auth
 requests>=2.28.0 # Requests do HTTP requests
 vaderSentiment>=3.3.2 # VaderSentiment do analizy sentymentu
+yfinance>=0.2.40 # Yahoo Finance – ceny akcji/ETF
 
 langchain # Langchain do AI/ML (LLM)
 langchain-openai # Langchain OpenAI

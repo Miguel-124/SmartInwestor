@@ -44,6 +44,9 @@ class PortfolioDetailSerializer(serializers.ModelSerializer):
     total_value_from_date = serializers.SerializerMethodField()
     total_pl_from_amount = serializers.SerializerMethodField()
     total_pl_from_percent = serializers.SerializerMethodField()
+    total_value_24h_ago = serializers.SerializerMethodField()
+    total_pl_24h_amount = serializers.SerializerMethodField()
+    total_pl_24h_percent = serializers.SerializerMethodField()
 
     class Meta:
         model = Portfolio
@@ -52,6 +55,7 @@ class PortfolioDetailSerializer(serializers.ModelSerializer):
             "total_cost", "total_current_value", "total_pl_amount", "total_pl_percent",
             "total_value_7d_ago", "total_pl_7d_amount", "total_pl_7d_percent",
             "total_value_from_date", "total_pl_from_amount", "total_pl_from_percent",
+            "total_value_24h_ago", "total_pl_24h_amount", "total_pl_24h_percent",
         ]
 
     def get_positions_count(self, obj):
@@ -81,6 +85,12 @@ class PortfolioDetailSerializer(serializers.ModelSerializer):
             from collections import defaultdict
             from transactions.models import Transaction
             from prices.services.coingecko import get_prices_by_symbol, get_price_days_ago, get_price_at_date
+            from prices.services.yahoo_finance import (
+                get_prices_for_symbols,
+                get_stock_price_24h_ago,
+                get_stock_price_days_ago as yahoo_price_days_ago,
+                get_stock_price_at_date as yahoo_price_at_date,
+            )
 
             request = self.context.get("request")
             from_date_str = request.query_params.get("from_date") if request else None
@@ -108,7 +118,7 @@ class PortfolioDetailSerializer(serializers.ModelSerializer):
             if not rows:
                 empty_totals = {
                     "total_cost": Decimal("0"), "total_current_value": Decimal("0"),
-                    "total_value_7d": Decimal("0"), "total_value_from": None,
+                    "total_value_7d": Decimal("0"), "total_value_from": None, "total_value_24h": Decimal("0"),
                 }
                 return [], empty_totals
 
@@ -117,11 +127,21 @@ class PortfolioDetailSerializer(serializers.ModelSerializer):
                 prices_map = get_prices_by_symbol(symbols, vs="usd")
             except Exception:
                 prices_map = {}
+            # Cena bieżąca w portfelu: krypto z CoinGecko, akcje/ETF z Yahoo (ta sama logika co przy dodawaniu transakcji)
+            missing = [s for s in symbols if (s or "").upper().strip() not in prices_map]
+            if missing:
+                try:
+                    yahoo_prices = get_prices_for_symbols(missing)
+                    for k, v in yahoo_prices.items():
+                        prices_map[k] = v
+                except Exception:
+                    pass
 
             total_cost_sum = Decimal("0")
             total_current_value_sum = Decimal("0")
             total_value_7d_sum = Decimal("0")
             total_value_from_sum = Decimal("0")
+            total_value_24h_sum = Decimal("0")
             has_from = False
             out = []
             for row in rows:
@@ -146,6 +166,9 @@ class PortfolioDetailSerializer(serializers.ModelSerializer):
                 value_from_date = None
                 pl_from_amount = None
                 pl_from_percent = None
+                value_24h_ago = None
+                pl_24h_amount = None
+                pl_24h_percent = None
 
                 total_cost_sum += total_cost
                 if current_price is not None and qty:
@@ -156,6 +179,8 @@ class PortfolioDetailSerializer(serializers.ModelSerializer):
                     total_current_value_sum += Decimal(str(current_value))
 
                     price_7d = get_price_days_ago(row["symbol"], "usd", 7)
+                    if price_7d is None:
+                        price_7d = yahoo_price_days_ago(row["symbol"], 7)
                     if price_7d is not None:
                         value_7d_ago = round(float(qty) * price_7d, 2)
                         pl_7d_amount = round(current_value - value_7d_ago, 2)
@@ -164,12 +189,23 @@ class PortfolioDetailSerializer(serializers.ModelSerializer):
 
                     if from_date_str:
                         price_from = get_price_at_date(row["symbol"], "usd", from_date_str)
+                        if price_from is None:
+                            price_from = yahoo_price_at_date(row["symbol"], from_date_str)
                         if price_from is not None:
                             value_from_date = round(float(qty) * price_from, 2)
                             pl_from_amount = round(current_value - value_from_date, 2)
                             pl_from_percent = round((pl_from_amount / value_from_date * 100), 2) if value_from_date else None
                             total_value_from_sum += Decimal(str(value_from_date))
                             has_from = True
+
+                    price_24h = get_price_days_ago(row["symbol"], "usd", 1)
+                    if price_24h is None:
+                        price_24h = get_stock_price_24h_ago(row["symbol"])
+                    if price_24h is not None:
+                        value_24h_ago = round(float(qty) * price_24h, 2)
+                        pl_24h_amount = round(current_value - value_24h_ago, 2)
+                        pl_24h_percent = round((pl_24h_amount / value_24h_ago * 100), 2) if value_24h_ago else None
+                        total_value_24h_sum += Decimal(str(value_24h_ago))
 
                 out.append({
                     "symbol": row["symbol"],
@@ -186,12 +222,16 @@ class PortfolioDetailSerializer(serializers.ModelSerializer):
                     "value_from_date": value_from_date,
                     "pl_from_amount": pl_from_amount,
                     "pl_from_percent": pl_from_percent,
+                    "value_24h_ago": value_24h_ago,
+                    "pl_24h_amount": pl_24h_amount,
+                    "pl_24h_percent": pl_24h_percent,
                 })
             totals = {
                 "total_cost": total_cost_sum.quantize(Decimal("0.01")),
                 "total_current_value": total_current_value_sum.quantize(Decimal("0.01")),
                 "total_value_7d": total_value_7d_sum.quantize(Decimal("0.01")),
                 "total_value_from": total_value_from_sum.quantize(Decimal("0.01")) if has_from else None,
+                "total_value_24h": total_value_24h_sum.quantize(Decimal("0.01")),
             }
             return out, totals
         except Exception as e:
@@ -199,7 +239,7 @@ class PortfolioDetailSerializer(serializers.ModelSerializer):
             logger.exception("_get_positions_with_pl failed for portfolio id=%s: %s", getattr(obj, "id", None), e)
             return [], {
                 "total_cost": Decimal("0"), "total_current_value": Decimal("0"),
-                "total_value_7d": Decimal("0"), "total_value_from": None,
+                "total_value_7d": Decimal("0"), "total_value_from": None, "total_value_24h": Decimal("0"),
             }
 
 
@@ -270,4 +310,23 @@ class PortfolioDetailSerializer(serializers.ModelSerializer):
         tcv, tvf = t["total_current_value"], t.get("total_value_from")
         if tvf and tvf != 0 and tcv is not None:
             return round(float((tcv - tvf) / tvf * 100), 2)
+        return None
+
+    def get_total_value_24h_ago(self, obj):
+        _, t = self._get_pl_cache(obj)
+        v = t.get("total_value_24h")
+        return str(v) if v and v != 0 else None
+
+    def get_total_pl_24h_amount(self, obj):
+        _, t = self._get_pl_cache(obj)
+        tcv, tv24 = t["total_current_value"], t.get("total_value_24h")
+        if tcv is not None and tv24 and tv24 != 0:
+            return str(round(float(tcv - tv24), 2))
+        return None
+
+    def get_total_pl_24h_percent(self, obj):
+        _, t = self._get_pl_cache(obj)
+        tcv, tv24 = t["total_current_value"], t.get("total_value_24h")
+        if tv24 and tv24 != 0 and tcv is not None:
+            return round(float((tcv - tv24) / tv24 * 100), 2)
         return None
