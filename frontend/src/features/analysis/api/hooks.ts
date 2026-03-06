@@ -1,15 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { analysisApi } from "./analysisApi";
 import type { AnalysisRequestDto } from "../types";
-import type { PortfolioModel } from "../../portfolios/types";
-import type { RiskProfile } from "../../profile/types";
 
-export function useAnalysisQuery(
-  params: {
-    riskProfile: RiskProfile;
-    portfolios: PortfolioModel[];
-  } | null,
-) {
+export function useAnalysisQuery(params: AnalysisRequestDto | null) {
   return useQuery({
     queryKey: [
       "analysis",
