@@ -76,7 +76,7 @@ function alignmentScore(
 }
 
 export const analysisHandlers = [
-  http.post("/api/analysis", async ({ request }) => {
+  http.post("*/api/analysis", async ({ request }) => {
     const auth =
       request.headers.get("authorization") ??
       request.headers.get("Authorization");

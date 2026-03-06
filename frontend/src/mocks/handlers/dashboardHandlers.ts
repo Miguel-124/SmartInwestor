@@ -161,7 +161,7 @@ function buildAdaptiveHistory(
 }
 
 export const dashboardHandlers = [
-  http.get("/api/dashboard/summary", async () => {
+  http.get("*/api/dashboard/summary", async () => {
     const currency = "PLN";
 
     const db = listPortfolios(getUser().id);

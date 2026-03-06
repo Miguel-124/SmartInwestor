@@ -50,7 +50,7 @@ function requireAuth(request: Request) {
 }
 
 export const portfoliosHandlers = [
-  http.get("/api/portfolios", ({ request }) => {
+  http.get("*/api/portfolios", ({ request }) => {
     const unauthorized = requireAuth(request);
     if (unauthorized) return unauthorized;
 
@@ -96,7 +96,7 @@ export const portfoliosHandlers = [
     return HttpResponse.json({ portfolios });
   }),
 
-  http.post("/api/portfolios", async ({ request }) => {
+  http.post("*/api/portfolios", async ({ request }) => {
     const unauthorized = requireAuth(request);
     if (unauthorized) return unauthorized;
 
@@ -116,7 +116,7 @@ export const portfoliosHandlers = [
     return HttpResponse.json(p, { status: 201 });
   }),
 
-  http.patch("/api/portfolios/:id", async ({ request, params }) => {
+  http.patch("*/api/portfolios/:id", async ({ request, params }) => {
     const unauthorized = requireAuth(request);
     if (unauthorized) return unauthorized;
 
@@ -140,7 +140,7 @@ export const portfoliosHandlers = [
     return HttpResponse.json(updated);
   }),
 
-  http.delete("/api/portfolios/:id", ({ request, params }) => {
+  http.delete("*/api/portfolios/:id", ({ request, params }) => {
     const unauthorized = requireAuth(request);
     if (unauthorized) return unauthorized;
 
@@ -152,7 +152,7 @@ export const portfoliosHandlers = [
     return HttpResponse.json({ ok: true });
   }),
 
-  http.post("/api/portfolios/:id/assets", async ({ request, params }) => {
+  http.post("*/api/portfolios/:id/assets", async ({ request, params }) => {
     const unauthorized = requireAuth(request);
     if (unauthorized) return unauthorized;
 
@@ -297,7 +297,7 @@ export const portfoliosHandlers = [
     },
   ),
 
-  http.delete("/api/portfolios/:id/assets/:assetId", ({ request, params }) => {
+  http.delete("*/api/portfolios/:id/assets/:assetId", ({ request, params }) => {
     const unauthorized = requireAuth(request);
     if (unauthorized) return unauthorized;
 
