@@ -11,6 +11,7 @@ describe("NotFound pages", () => {
       <MemoryRouter initialEntries={["/cos-nie-istnieje"]}>
         <PublicNotFoundPage />
       </MemoryRouter>,
+      { withRouter: false },
     );
 
     expect(screen.getByText("404")).toBeInTheDocument();
@@ -22,6 +23,7 @@ describe("NotFound pages", () => {
       <MemoryRouter initialEntries={["/dashboard/xyz"]}>
         <PrivateNotFoundPage />
       </MemoryRouter>,
+      { withRouter: false },
     );
 
     expect(screen.getByText("Nie znaleziono strony")).toBeInTheDocument();

@@ -62,7 +62,7 @@ function calcValueAtDate(
 }
 
 export const chartsHandlers = [
-  http.get("/api/charts/overview", ({ request }) => {
+  http.get("*/api/charts/overview", ({ request }) => {
     const url = new URL(request.url);
     const range = url.searchParams.get("range") ?? "all";
     const points = clampInt(url.searchParams.get("points"), 2, 50, 20);

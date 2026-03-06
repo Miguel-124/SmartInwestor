@@ -2,7 +2,7 @@ import { http, HttpResponse } from "msw";
 import { getUser, updateUser } from "../db/usersDb";
 
 export const userHandlers = [
-  http.get("/api/users/me", async ({ request }) => {
+  http.get("*/api/users/me", async ({ request }) => {
     const auth =
       request.headers.get("authorization") ??
       request.headers.get("Authorization");
@@ -13,7 +13,7 @@ export const userHandlers = [
     return HttpResponse.json(getUser());
   }),
 
-  http.put("/api/users/me", async ({ request }) => {
+  http.put("*/api/users/me", async ({ request }) => {
     const auth =
       request.headers.get("authorization") ??
       request.headers.get("Authorization");
@@ -35,7 +35,7 @@ export const userHandlers = [
     return HttpResponse.json(updated);
   }),
 
-  http.post("/api/users/me/password", async ({ request }) => {
+  http.post("*/api/users/me/password", async ({ request }) => {
     const auth =
       request.headers.get("authorization") ??
       request.headers.get("Authorization");

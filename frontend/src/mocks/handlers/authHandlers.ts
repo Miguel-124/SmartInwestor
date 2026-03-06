@@ -10,7 +10,7 @@ type RegisterBody = {
 };
 
 export const authHandlers = [
-  http.post("/api/auth/login", async ({ request }) => {
+  http.post("*/api/auth/login", async ({ request }) => {
     const body = (await request.json().catch(() => ({}))) as LoginBody;
 
     if (!body.email || !body.password) {
@@ -33,7 +33,7 @@ export const authHandlers = [
     });
   }),
 
-  http.post("/api/auth/google", async () => {
+  http.post("*/api/auth/google", async () => {
     return HttpResponse.json({
       token: "mock-google-token-123",
       user: {
@@ -44,7 +44,7 @@ export const authHandlers = [
     });
   }),
 
-  http.post("/api/auth/register", async ({ request }) => {
+  http.post("*/api/auth/register", async ({ request }) => {
     const body = (await request.json().catch(() => ({}))) as RegisterBody;
 
     if (!body.firstName || !body.lastName || !body.email || !body.password) {

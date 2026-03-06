@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import "@testing-library/jest-dom/vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "../../../test/renderWithProviders";
@@ -29,7 +30,7 @@ describe("ProfileSettingsPage", () => {
     await user.clear(screen.getByLabelText("Data urodzenia"));
     await user.type(screen.getByLabelText("Data urodzenia"), "1990-01-01");
 
-    await user.click(screen.getByLabelText("Agresywny"));
+    await user.click(screen.getByRole("radio", { name: /Agresywny/ }));
 
     await user.click(
       await screen.findByLabelText(

@@ -16,10 +16,11 @@ vi.mock("react-router-dom", async () => {
 describe("OnboardingPage", () => {
   it("blokuje submit dla niepełnoletniego", async () => {
     const user = userEvent.setup();
+    sessionStorage.setItem("onboardingAllowed", "1");
     renderWithProviders(<OnboardingPage />);
 
     await user.type(screen.getByLabelText("Data urodzenia"), "2010-01-01");
-    await user.click(screen.getByLabelText("Ostrożny"));
+    await user.click(screen.getByRole("radio", { name: /Ostrożny/ }));
     await user.click(
       screen.getByLabelText(
         "Akceptuję ryzyko inwestycyjne i rozumiem, że aplikacja nie ponosi odpowiedzialności za moje decyzje.",
@@ -35,10 +36,11 @@ describe("OnboardingPage", () => {
 
   it("po poprawnym onboardingu przechodzi na /login", async () => {
     const user = userEvent.setup();
+    sessionStorage.setItem("onboardingAllowed", "1");
     renderWithProviders(<OnboardingPage />);
 
     await user.type(screen.getByLabelText("Data urodzenia"), "1990-01-01");
-    await user.click(screen.getByLabelText("Zrównoważony"));
+    await user.click(screen.getByRole("radio", { name: /Zrównoważony/ }));
     await user.click(
       screen.getByLabelText(
         "Akceptuję ryzyko inwestycyjne i rozumiem, że aplikacja nie ponosi odpowiedzialności za moje decyzje.",
@@ -48,7 +50,7 @@ describe("OnboardingPage", () => {
     await user.click(screen.getByRole("button", { name: "Zapisz onboarding" }));
 
     await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith("/login");
+      expect(navigateMock).toHaveBeenCalledWith("/dashboard");
     });
   });
 });

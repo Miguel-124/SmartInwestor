@@ -19,7 +19,7 @@ describe("PortfoliosPage", () => {
     expect(screen.getByLabelText("portfolio-dialog")).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Nazwa portfela"), "Nowy portfel");
-    await user.click(screen.getByRole("button", { name: "Dodaj" }));
+    await user.click(screen.getByLabelText("portfolio-submit"));
 
     expect(await screen.findByText("Nowy portfel")).toBeInTheDocument();
   });
